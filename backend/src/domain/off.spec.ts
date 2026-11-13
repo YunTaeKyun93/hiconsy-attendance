@@ -1,6 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { seoulToInstant } from '../common/date-time.js';
-import { offExpiry, offRemaining, selectOffGrant, toOffGrants, type OffGrant } from './off.js';
+import {
+  offExpiry,
+  offGrantsOn,
+  offRemaining,
+  offUnavailableMessage,
+  selectOffGrant,
+  toOffGrants,
+  type OffGrant,
+} from './off.js';
 
 // DESIGN.md 5-4 예시: A(11/14 근무, ~12/14), B(12/5 근무, ~1/4)
 const A: OffGrant = { attendanceId: 10, workDate: '2026-11-14' };
@@ -65,5 +73,36 @@ describe('toOffGrants', () => {
       { id: 3, workDate: '2026-11-16', requestId: null, checkOutAt: out },
     ];
     expect(toOffGrants(rows)).toEqual([{ attendanceId: 1, workDate: '2026-11-14' }]);
+  });
+});
+
+describe('offGrantsOn', () => {
+  it('사용일 기준 상태를 지급일 순으로', () => {
+    const C: OffGrant = { attendanceId: 30, workDate: '2026-12-26' };
+    expect(offGrantsOn('2026-12-20', [C, B, A], new Set([20]))).toEqual([
+      { attendanceId: 10, workDate: '2026-11-14', expiresOn: '2026-12-14', status: 'EXPIRED' },
+      { attendanceId: 20, workDate: '2026-12-05', expiresOn: '2027-01-04', status: 'IN_USE' },
+      { attendanceId: 30, workDate: '2026-12-26', expiresOn: '2027-01-25', status: 'NOT_YET' },
+    ]);
+  });
+  it('만료일 당일은 USABLE', () => {
+    expect(offGrantsOn('2026-12-14', [A], new Set())[0].status).toBe('USABLE');
+  });
+});
+
+describe('offUnavailableMessage', () => {
+  it('지급 건마다 사용일 기준 사유를 한 줄씩', () => {
+    const items = offGrantsOn('2026-12-20', [A, B, { attendanceId: 30, workDate: '2026-12-26' }], new Set([20]));
+    expect(offUnavailableMessage('2026-12-20', items)).toBe(
+      [
+        '2026-12-20에 쓸 수 있는 OFF가 없습니다.',
+        '- 2026-11-14 근무분: 2026-12-14까지 사용 가능 (만료)',
+        '- 2026-12-05 근무분: 다른 신청에 사용 중',
+        '- 2026-12-26 근무분: 2026-12-26부터 사용 가능',
+      ].join('\n'),
+    );
+  });
+  it('보유 건이 없으면 한 줄', () => {
+    expect(offUnavailableMessage('2026-12-20', [])).toBe('보유한 OFF가 없습니다.');
   });
 });

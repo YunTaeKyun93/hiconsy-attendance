@@ -10,6 +10,7 @@ import { AuthModule } from './auth/auth.module.js';
 import { JwtAuthGuard } from './auth/jwt-auth.guard.js';
 import { RolesGuard } from './auth/roles.guard.js';
 import { ClockModule } from './clock/clock.module.js';
+import { RequestsModule } from './requests/requests.module.js';
 import { dataSourceOptions } from './database/data-source.js';
 import { HolidaysModule } from './holidays/holidays.module.js';
 
@@ -22,6 +23,7 @@ import { HolidaysModule } from './holidays/holidays.module.js';
     AccessModule,
     AuthModule,
     AttendanceModule,
+    RequestsModule,
   ],
   // 전역 가드는 아래 순서대로 실행된다. 순서를 바꾸지 않는다.
   // ① IP 1단계(모든 요청) → ② JWT(@Public 제외) → ③ IP 2단계(@Public 제외) → ④ 역할(@Roles만)

@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, type Repository } from 'typeorm';
+import { Between, In, type Repository } from 'typeorm';
 import type { DateStr } from '../common/date-time.js';
 import { Holiday } from '../database/entities/holiday.entity.js';
 import type { HolidaySet } from '../domain/types.js';
@@ -19,6 +19,12 @@ export class HolidaysService {
       select: { date: true },
       where: { date: In([...new Set(dates)]) },
     });
+    return new Set(rows.map((r) => r.date));
+  }
+
+  /** from~to(양 끝 포함) 사이의 공휴일 집합 */
+  async setBetween(from: DateStr, to: DateStr): Promise<HolidaySet> {
+    const rows = await this.repo.find({ select: { date: true }, where: { date: Between(from, to) } });
     return new Set(rows.map((r) => r.date));
   }
 }

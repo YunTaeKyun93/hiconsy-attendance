@@ -1,4 +1,6 @@
 import type { AttendanceRejectCode } from '../attendance/attendance-errors.js';
+import type { RequestStatus, RequestType } from '../database/enums.js';
+import type { RequestActionRefusal, SubmitRefusalCode } from '../requests/requests-errors.js';
 
 // 행동별 이력 모양. action에 따라 payload 모양이 정해진다.
 // 새 행동은 해당 Phase에서 이 유니언에 추가한다.
@@ -21,6 +23,13 @@ interface IpDenied {
   action: 'IP_DENIED';
   userId: number | null;
   payload: { stage: 1 | 2; method: string; path: string };
+}
+
+/** 역할 부족(리드 전용 경로). 상태 변경 요청만 남긴다. */
+interface RoleDenied {
+  action: 'ROLE_DENIED';
+  userId: number;
+  payload: { method: string; path: string };
 }
 
 /** 출근 버튼. 대상: attendances */
@@ -57,14 +66,63 @@ interface AttendanceRejected {
   };
 }
 
+/** 신청 제출. 대상: requests. 리드 본인 신청은 status가 APPROVED. */
+interface RequestSubmitted {
+  action: 'REQUEST_SUBMITTED';
+  userId: number;
+  payload: { type: RequestType; targetDate: string; status: RequestStatus; usedAttendanceId: number | null };
+}
+
+/** 제출 거절(행을 만들지 않음). 반려(REQUEST_REJECTED)와 구분한다. 입력 형식 오류(400)는 남기지 않는다. */
+interface RequestSubmitRefused {
+  action: 'REQUEST_SUBMIT_REFUSED';
+  userId: number;
+  payload: { type: RequestType; targetDate: string; reason: SubmitRefusalCode };
+}
+
+/** 본인 취소. 대상: requests */
+interface RequestCanceled {
+  action: 'REQUEST_CANCELED';
+  userId: number;
+  payload: { fromStatus: RequestStatus };
+}
+
+/** 리드 승인. 대상: requests */
+interface RequestApproved {
+  action: 'REQUEST_APPROVED';
+  userId: number;
+  payload: { requesterId: number };
+}
+
+/** 리드 반려. 대상: requests */
+interface RequestRejected {
+  action: 'REQUEST_REJECTED';
+  userId: number;
+  payload: { requesterId: number };
+}
+
+/** 취소·승인·반려 시도 거절. 대상: requests */
+interface RequestActionRefused {
+  action: 'REQUEST_ACTION_REFUSED';
+  userId: number;
+  payload: { attempt: 'CANCEL' | 'APPROVE' | 'REJECT'; reason: RequestActionRefusal };
+}
+
 export type ActivityEntry =
   | LoginSuccess
   | LoginFailure
   | IpDenied
+  | RoleDenied
   | CheckIn
   | CheckOut
   | ManualCheckOut
-  | AttendanceRejected;
+  | AttendanceRejected
+  | RequestSubmitted
+  | RequestSubmitRefused
+  | RequestCanceled
+  | RequestApproved
+  | RequestRejected
+  | RequestActionRefused;
 
 export type ActivityAction = ActivityEntry['action'];
 export type ActivityPayload = ActivityEntry['payload'];
