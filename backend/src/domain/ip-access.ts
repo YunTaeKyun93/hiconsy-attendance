@@ -59,3 +59,8 @@ export function evaluateStage1(
 export function evaluateStage2(access: AccessContext, userId: number): boolean {
   return access.lab || access.ownerIds.includes(userId);
 }
+
+/** 요청 IP가 신청의 allowed_ip와 같은지(양쪽 정규화). 주말 근무 버튼 출퇴근에 쓴다. */
+export function ipMatches(allowedIp: string | null, ip: string): boolean {
+  return allowedIp !== null && normalizeIp(allowedIp) === normalizeIp(ip);
+}

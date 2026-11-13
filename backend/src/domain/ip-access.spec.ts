@@ -2,6 +2,7 @@ import { seoulToInstant } from '../common/date-time.js';
 import {
   evaluateStage1,
   evaluateStage2,
+  ipMatches,
   isWithinAccessWindow,
   normalizeIp,
   parseLabIps,
@@ -98,5 +99,15 @@ describe('evaluateStage2', () => {
   it('연구실 밖이면 신청자 본인만 통과', () => {
     expect(evaluateStage2({ lab: false, ownerIds: [2, 3] }, 3)).toBe(true);
     expect(evaluateStage2({ lab: false, ownerIds: [2, 3] }, 4)).toBe(false);
+  });
+});
+
+describe('ipMatches', () => {
+  it('정규화한 뒤 비교한다', () => {
+    expect(ipMatches('192.168.0.5', '::ffff:192.168.0.5')).toBe(true);
+    expect(ipMatches('192.168.0.5', '192.168.0.6')).toBe(false);
+  });
+  it('allowed_ip가 없으면 불일치', () => {
+    expect(ipMatches(null, '192.168.0.5')).toBe(false);
   });
 });

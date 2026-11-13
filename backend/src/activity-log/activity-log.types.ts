@@ -1,3 +1,5 @@
+import type { AttendanceRejectCode } from '../attendance/attendance-errors.js';
+
 // 행동별 이력 모양. action에 따라 payload 모양이 정해진다.
 // 새 행동은 해당 Phase에서 이 유니언에 추가한다.
 
@@ -21,7 +23,48 @@ interface IpDenied {
   payload: { stage: 1 | 2; method: string; path: string };
 }
 
-export type ActivityEntry = LoginSuccess | LoginFailure | IpDenied;
+/** 출근 버튼. 대상: attendances */
+interface CheckIn {
+  action: 'CHECK_IN';
+  userId: number;
+  payload: { workDate: string; checkInAt: string };
+}
+
+/** 퇴근 버튼. 대상: attendances */
+interface CheckOut {
+  action: 'CHECK_OUT';
+  userId: number;
+  payload: { workDate: string; checkOutAt: string };
+}
+
+/** 미기록 퇴근 직접 입력. 대상: attendances */
+interface ManualCheckOut {
+  action: 'MANUAL_CHECK_OUT';
+  userId: number;
+  payload: { workDate: string; checkOutAt: string };
+}
+
+export type AttendanceAttempt = 'CHECK_IN' | 'CHECK_OUT' | 'MANUAL_CHECK_OUT';
+
+/** 출퇴근·직접 입력 거절. 입력 형식 오류(400)는 남기지 않는다. */
+interface AttendanceRejected {
+  action: 'ATTENDANCE_REJECTED';
+  userId: number;
+  payload: {
+    attempt: AttendanceAttempt;
+    reason: AttendanceRejectCode;
+    workDate: string;
+  };
+}
+
+export type ActivityEntry =
+  | LoginSuccess
+  | LoginFailure
+  | IpDenied
+  | CheckIn
+  | CheckOut
+  | ManualCheckOut
+  | AttendanceRejected;
 
 export type ActivityAction = ActivityEntry['action'];
 export type ActivityPayload = ActivityEntry['payload'];
