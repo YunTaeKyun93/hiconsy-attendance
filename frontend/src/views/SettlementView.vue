@@ -44,10 +44,13 @@ watch(month, load)
 </script>
 
 <template>
-  <v-container>
+  <v-container class="py-6">
     <v-card class="mb-4">
-      <v-card-title class="d-flex align-center ga-4">
-        월별 정산 {{ list?.month ?? detail?.month ?? '' }}
+      <v-card-title class="d-flex align-center flex-wrap ga-4">
+        <span class="d-inline-flex align-center ga-2">
+          <v-icon icon="mdi-table-clock" size="20" />
+          월별 정산 {{ list?.month ?? detail?.month ?? '' }}
+        </span>
         <v-spacer />
         <v-text-field
           v-model="month"
@@ -56,6 +59,8 @@ watch(month, load)
           density="compact"
           hide-details
           clearable
+          variant="outlined"
+          lang="ko"
           style="max-width: 240px"
         />
       </v-card-title>
@@ -63,9 +68,10 @@ watch(month, load)
         저장하지 않고 출퇴근 기록과 승인된 신청으로 계산합니다. 결근은 오늘 이전 날짜만 셉니다.
         잔여 기준일: {{ list?.rows[0]?.balance.asOf ?? detail?.balance.asOf ?? '-' }} (지난 달은 말일, 이번 달은 오늘)
       </v-card-subtitle>
-      <v-alert v-if="error" type="error" density="compact" class="ma-4">{{ error }}</v-alert>
+      <v-alert v-if="error" type="error" variant="tonal" density="compact" class="ma-4">{{ error }}</v-alert>
 
-      <v-table v-if="auth.isLead && list" hover>
+      <v-progress-linear v-if="auth.isLead ? !list : !detail" indeterminate color="primary" />
+      <v-table v-if="auth.isLead && list" hover class="table-sticky-first">
         <thead>
           <tr>
             <th class="text-no-wrap">이름</th>
@@ -91,7 +97,7 @@ watch(month, load)
             v-for="r in list.rows"
             :key="r.userId"
             class="cursor-pointer"
-            :class="{ 'bg-blue-lighten-5': selected === r.userId }"
+            :style="selected === r.userId ? 'background: rgba(var(--v-theme-primary), 0.08)' : ''"
             @click="select(r.userId)"
           >
             <td class="text-no-wrap">{{ r.name }}</td>
@@ -113,7 +119,7 @@ watch(month, load)
           </tr>
         </tbody>
       </v-table>
-      <v-card-text v-if="auth.isLead" class="text-caption text-medium-emphasis">행을 누르면 일별 상세가 열립니다.</v-card-text>
+      <v-card-text v-if="auth.isLead" class="text-body-small text-medium-emphasis">행을 누르면 일별 상세가 열립니다.</v-card-text>
     </v-card>
 
     <SettlementDetailCard v-if="detail" :detail="detail" />

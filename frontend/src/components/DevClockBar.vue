@@ -1,12 +1,16 @@
 <script setup lang="ts">
 // 개발 모드 시계·테스트 데이터 초기화 (DESIGN.md 13장). 서버가 /api/dev를 열어 둔 경우(개발 모드)에만 보인다.
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { api, ApiError, errorMessage } from '@/api/client'
 import type { DevClockView } from '@/api/types'
+import { useFeedbackStore } from '@/stores/feedback'
 import { useRefreshStore } from '@/stores/refresh'
 import { kstDate, kstTime, toTimeStr, withWeekday } from '@/utils/format'
 
 const refresh = useRefreshStore()
+const fb = useFeedbackStore()
+const bar = ref<{ $el: HTMLElement } | null>(null)
+let observer: ResizeObserver | undefined
 const available = ref(false)
 const expanded = ref(false)
 const offsetMs = ref(0)
@@ -65,11 +69,18 @@ async function reset() {
 
 /** 출퇴근·신청·특별 연차·이력을 비우고 시계를 실제 시각으로. 사용자·공휴일은 유지. */
 async function resetData() {
-  if (!confirm('출퇴근·신청·특별 연차·이력을 모두 지우고 시계를 실제 시각으로 되돌립니다.\n사용자와 공휴일은 유지됩니다. 계속할까요?')) return
+  const ok = await fb.confirm({
+    title: '테스트 데이터 초기화',
+    text: '출퇴근·신청·특별 연차·이력을 모두 지우고 시계를 실제 시각으로 되돌립니다.\n사용자와 공휴일은 유지됩니다.',
+    confirmText: '초기화',
+    danger: true,
+  })
+  if (!ok) return
   error.value = ''
   try {
     apply(await api<DevClockView>('/dev/reset', { method: 'POST' }))
     refresh.bump()
+    fb.notify('테스트 데이터를 초기화했습니다.')
   } catch (e) {
     error.value = errorMessage(e)
   }
@@ -96,20 +107,37 @@ const QUICK_TIMES = ['07:00:00', '09:59:30', '10:00:30', '16:00:00', '17:00:00']
 const DAY = 86_400_000
 const HOUR = 3_600_000
 
+/** 막대 높이를 CSS 변수로 알려 본문 아래 여백을 맞춘다. */
+function syncHeight() {
+  const h = available.value && bar.value ? bar.value.$el.offsetHeight : 0
+  document.documentElement.style.setProperty('--dev-bar-h', `${h}px`)
+}
+
+watch([available, expanded], () => void nextTick(syncHeight))
+
 onMounted(async () => {
   await load()
+  await nextTick()
+  if (bar.value) {
+    observer = new ResizeObserver(syncHeight)
+    observer.observe(bar.value.$el)
+  }
+  syncHeight()
   timer = window.setInterval(() => {
     if (syncedAt) displayMs.value = syncedServerMs + (performance.now() - syncedAt)
   }, 1000)
 })
-onBeforeUnmount(() => window.clearInterval(timer))
+onBeforeUnmount(() => {
+  window.clearInterval(timer)
+  observer?.disconnect()
+})
 </script>
 
 <template>
-  <v-footer v-if="available" app color="grey-darken-3" class="dev-clock py-1">
+  <v-footer v-if="available" ref="bar" color="grey-darken-4" class="dev-clock py-1" elevation="8">
     <div class="d-flex flex-wrap align-center ga-2 w-100">
       <v-chip size="small" color="amber" variant="flat" label>DEV 시계</v-chip>
-      <span class="text-body-2">서버 {{ display }}</span>
+      <span class="text-body-medium">서버 {{ display }}</span>
       <v-chip v-if="offsetMs !== 0" size="x-small" color="amber" variant="outlined">조작 중</v-chip>
       <v-spacer />
       <v-btn size="small" variant="text" :icon="expanded ? 'mdi-chevron-down' : 'mdi-chevron-up'" @click="expanded = !expanded" />
@@ -128,16 +156,21 @@ onBeforeUnmount(() => window.clearInterval(timer))
       </v-btn>
       <v-divider vertical />
       <v-btn size="small" variant="outlined" @click="reset">실제 시각으로</v-btn>
-      <v-btn size="small" color="red-lighten-1" variant="flat" prepend-icon="mdi-delete-sweep" @click="resetData">
+      <v-btn size="small" color="status-late" variant="flat" prepend-icon="mdi-delete-sweep" @click="resetData">
         테스트 데이터 초기화
       </v-btn>
-      <span v-if="error" class="text-error text-body-2">{{ error }}</span>
+      <span v-if="error" class="text-error text-body-medium">{{ error }}</span>
     </div>
   </v-footer>
 </template>
 
 <style scoped>
 .dev-clock {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1010;
   flex-direction: column;
   align-items: stretch;
 }

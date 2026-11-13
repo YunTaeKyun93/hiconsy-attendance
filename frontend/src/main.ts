@@ -4,6 +4,7 @@ import { createPinia } from 'pinia'
 import App from './App.vue'
 import router from './router'
 import vuetify from './plugins/vuetify'
+import './styles/app.css'
 import { ApiError, IP_NOT_ALLOWED, setGlobalHandlers } from './api/client'
 import { useAuthStore } from './stores/auth'
 

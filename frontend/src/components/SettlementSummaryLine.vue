@@ -6,7 +6,7 @@ defineProps<{ summary: SettlementSummary; balance: SettlementBalance }>()
 </script>
 
 <template>
-  <div class="d-flex flex-wrap ga-4 text-body-2">
+  <div class="d-flex flex-wrap ga-4 text-body-medium">
     <span>근무일 <b>{{ summary.attendanceDays }}</b>일 · 근무 <b>{{ duration(summary.totalWorkSeconds) }}</b></span>
     <span>지각 <b>{{ summary.late }}</b> · 조퇴 <b>{{ summary.earlyLeave }}</b> · 결근 <b>{{ summary.absent }}</b></span>
     <span>미기록 <b>{{ summary.unrecorded }}</b> · 직접 입력 <b>{{ summary.manual }}</b></span>

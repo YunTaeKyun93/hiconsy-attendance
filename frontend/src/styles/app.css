@@ -1,0 +1,34 @@
+/* 전역 보조 스타일. 색은 테마 변수만 쓴다. */
+
+/* 넓은 표: 가로 스크롤 + 첫 칸(이름·날짜) 고정 */
+.table-sticky-first th:first-child,
+.table-sticky-first td:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: rgb(var(--v-theme-surface));
+}
+
+.pre-line {
+  white-space: pre-line;
+}
+
+.cursor-pointer {
+  cursor: pointer;
+}
+
+/* 날짜·시각 입력: 다크 모드에서도 달력·시계 아이콘이 보이게 */
+.v-theme--dark input[type='date'],
+.v-theme--dark input[type='time'],
+.v-theme--dark input[type='month'] {
+  color-scheme: dark;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
