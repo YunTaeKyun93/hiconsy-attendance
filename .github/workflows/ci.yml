@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  check:
+    name: 단위 테스트 · 타입체크 · 린트 · 빌드
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: 의존성 설치
+        run: npm ci
+
+      # 백엔드: DB 없이 도는 순수 함수 단위 테스트(서버 OS 시간대 의존 확인을 위해 TZ=America/Los_Angeles)
+      - name: 백엔드 단위 테스트
+        run: npm run test -w backend
+
+      - name: 백엔드 타입체크
+        run: npx tsc --noEmit -p backend/tsconfig.json
+
+      - name: 백엔드 린트 (시계 규칙 커스텀 린트 포함)
+        run: npm run lint -w backend
+
+      - name: 백엔드 빌드
+        run: npm run build -w backend
+
+      - name: 프론트 타입체크
+        run: npm run type-check -w frontend
+
+      # 로컬 lint 스크립트는 --fix라서 CI에서는 고치지 않고 검사만 한다.
+      - name: 프론트 린트
+        working-directory: frontend
+        run: npx oxlint . && npx eslint .
+
+      - name: 프론트 빌드
+        run: npm run build-only -w frontend
