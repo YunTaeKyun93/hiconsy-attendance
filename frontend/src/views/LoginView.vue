@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import type { VTextField } from 'vuetify/components'
 import { errorMessage } from '@/api/client'
 import { useAuthStore } from '@/stores/auth'
 
@@ -11,8 +12,13 @@ const password = ref('')
 const showPassword = ref(false)
 const error = ref('')
 const loading = ref(false)
+const idField = ref<InstanceType<typeof VTextField> | null>(null)
 /** 개발 서버에서만 시드 계정 안내 */
 const isDev = import.meta.env.DEV
+
+// Vuetify의 autofocus는 화면에 보일 때(IntersectionObserver) 늦게 포커스해서, 그 사이 입력하던 칸의 포커스를 빼앗을 수 있다.
+// 마운트 즉시 직접 포커스한다.
+onMounted(() => idField.value?.focus())
 
 async function submit() {
   error.value = ''
@@ -41,12 +47,12 @@ async function submit() {
       <v-card-text>
         <v-form @submit.prevent="submit">
           <v-text-field
+            ref="idField"
             v-model="loginId"
             label="아이디"
             prepend-inner-icon="mdi-account-outline"
             variant="outlined"
             autocomplete="username"
-            autofocus
             class="mb-1"
           />
           <v-text-field

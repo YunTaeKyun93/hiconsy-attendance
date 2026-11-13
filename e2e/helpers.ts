@@ -19,10 +19,7 @@ export async function resetData(request: APIRequestContext): Promise<void> {
 export async function login(page: Page, loginId: string): Promise<void> {
   // 로그아웃 직후엔 이미 /login이다. 다시 이동하면 입력 도중 새로고침되어 값이 섞인다.
   if (!new URL(page.url(), 'http://x').pathname.endsWith('/login')) await page.goto('/login')
-  // 아이디 칸 autofocus가 끝난 뒤 입력한다(먼저 입력하면 늦게 온 포커스가 비밀번호 입력을 가로챈다).
-  const id = page.getByLabel('아이디', { exact: true })
-  await expect(id).toBeFocused()
-  await id.fill(loginId)
+  await page.getByLabel('아이디', { exact: true }).fill(loginId)
   await page.getByLabel('비밀번호', { exact: true }).fill(PASSWORD)
   await page.getByRole('button', { name: '로그인' }).click()
   await page.waitForURL('/')
