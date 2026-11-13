@@ -13,6 +13,7 @@ const facts = (over: Partial<SubmissionFacts> = {}): SubmissionFacts => ({
   holidays: HOLIDAYS,
   hasActiveOnDate: false,
   hiredAt: '2026-02-12',
+  annualGrantedDays: 0,
   activeAnnualCount: 0,
   activeRemoteDates: [],
   offGrants: [],
@@ -88,6 +89,14 @@ describe('judgeSubmission: 연차', () => {
     expect(judgeSubmission(facts({ activeAnnualCount: 8 })).ok).toBe(true);
     expect(judgeSubmission(facts({ activeAnnualCount: 9 }))).toEqual({
       ok: false,
+      reason: 'INSUFFICIENT_ANNUAL',
+      remaining: 0,
+    });
+  });
+
+  it('특별 지급 일수를 적립에 더한다', () => {
+    expect(judgeSubmission(facts({ activeAnnualCount: 9, annualGrantedDays: 1 })).ok).toBe(true);
+    expect(judgeSubmission(facts({ activeAnnualCount: 10, annualGrantedDays: 1 }))).toMatchObject({
       reason: 'INSUFFICIENT_ANNUAL',
       remaining: 0,
     });

@@ -15,7 +15,8 @@ const GRANT_COLOR = { USABLE: 'success', IN_USE: 'warning', EXPIRED: 'grey' } as
           <div class="text-overline">연차</div>
           <div class="text-h5">{{ balance.annual.remaining }}일</div>
           <div class="text-caption text-medium-emphasis">
-            적립 {{ balance.annual.accrued }} · 사용(대기 포함) {{ balance.annual.used }}
+            적립 {{ balance.annual.accrued }}<template v-if="balance.annual.granted"> · 특별 지급 {{ balance.annual.granted }}</template>
+            · 사용(대기 포함) {{ balance.annual.used }}
           </div>
         </v-col>
         <v-col cols="12" sm="4">

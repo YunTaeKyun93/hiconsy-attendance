@@ -130,7 +130,7 @@ describe('balancesAsOf', () => {
     usedAttendanceId,
   });
 
-  it('연차: 기준일까지 제출한 유효 신청만 사용으로 센다', () => {
+  it('연차: 기준일까지 제출한 유효 신청만 사용, 기준일 시점에 유효한 특별 지급은 더함', () => {
     const b = balancesAsOf({
       month: '2026-10',
       asOf: '2026-10-31',
@@ -141,8 +141,14 @@ describe('balancesAsOf', () => {
         req(RequestType.ANNUAL, '2026-11-25', '2026-11-03'), // 기준일 뒤에 냄 → 안 셈
       ],
       offGrants: [],
+      annualGrants: [
+        { days: 2, grantDate: '2026-10-20', canceledOn: null },
+        { days: 3, grantDate: '2026-11-02', canceledOn: null }, // 기준일 뒤 지급 → 안 셈
+        { days: 1, grantDate: '2026-10-01', canceledOn: '2026-10-15' }, // 기준일 전 취소 → 안 셈
+        { days: 4, grantDate: '2026-10-10', canceledOn: '2026-11-03' }, // 기준일 뒤 취소 → 그날엔 유효
+      ],
     });
-    expect(b).toEqual({ asOf: '2026-10-31', annual: 6, remote: 2, off: 0 });
+    expect(b).toEqual({ asOf: '2026-10-31', annual: 12, remote: 2, off: 0 });
   });
 
   it('재택: 정산 달 대상일 기준(제출 시점 무관)', () => {
@@ -152,6 +158,7 @@ describe('balancesAsOf', () => {
       hiredAt: '2026-01-01',
       activeRequests: [req(RequestType.REMOTE, '2026-11-03', '2026-10-30'), req(RequestType.REMOTE, '2026-12-01', '2026-11-10')],
       offGrants: [],
+      annualGrants: [],
     });
     expect(b.remote).toBe(1);
   });
@@ -169,6 +176,7 @@ describe('balancesAsOf', () => {
       hiredAt: '2026-01-01',
       activeRequests: [req(RequestType.OFF, '2026-11-20', '2026-11-05', 3)],
       offGrants: grants,
+      annualGrants: [],
     });
     expect(b.off).toBe(2);
   });

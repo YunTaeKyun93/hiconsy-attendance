@@ -1,6 +1,7 @@
 import type { AttendanceRejectCode } from '../attendance/attendance-errors.js';
 import type { RequestStatus, RequestType } from '../database/enums.js';
 import type { RequestActionRefusal, SubmitRefusalCode } from '../requests/requests-errors.js';
+import type { GrantRefusalCode } from '../annual-grants/annual-grants-errors.js';
 
 // 행동별 이력 모양. action에 따라 payload 모양이 정해진다.
 // 새 행동은 해당 Phase에서 이 유니언에 추가한다.
@@ -108,6 +109,27 @@ interface RequestActionRefused {
   payload: { attempt: 'CANCEL' | 'APPROVE' | 'REJECT'; reason: RequestActionRefusal };
 }
 
+/** 리드의 특별 연차 지급. 대상: annual_grants */
+interface AnnualGranted {
+  action: 'ANNUAL_GRANTED';
+  userId: number;
+  payload: { recipientId: number; days: number };
+}
+
+/** 특별 연차 취소. 대상: annual_grants */
+interface AnnualGrantCanceled {
+  action: 'ANNUAL_GRANT_CANCELED';
+  userId: number;
+  payload: { recipientId: number; days: number };
+}
+
+/** 특별 연차 지급·취소 거절. 입력 형식 오류(400)는 남기지 않는다. */
+interface AnnualGrantActionRefused {
+  action: 'ANNUAL_GRANT_ACTION_REFUSED';
+  userId: number;
+  payload: { attempt: 'GRANT' | 'CANCEL'; reason: GrantRefusalCode };
+}
+
 export type ActivityEntry =
   | LoginSuccess
   | LoginFailure
@@ -122,7 +144,10 @@ export type ActivityEntry =
   | RequestCanceled
   | RequestApproved
   | RequestRejected
-  | RequestActionRefused;
+  | RequestActionRefused
+  | AnnualGranted
+  | AnnualGrantCanceled
+  | AnnualGrantActionRefused;
 
 export type ActivityAction = ActivityEntry['action'];
 export type ActivityPayload = ActivityEntry['payload'];

@@ -9,7 +9,7 @@ import {
   type DateStr,
 } from '../common/date-time.js';
 import { User } from '../database/entities/user.entity.js';
-import { accruedAnnualLeave, annualRemaining } from '../domain/annual-leave.js';
+import { accruedAnnualLeave, annualRemaining, grantedAnnualDays } from '../domain/annual-leave.js';
 import {
   offGrantsOn,
   offRemaining,
@@ -20,7 +20,8 @@ import { loadBalanceFacts } from './balance-facts.js';
 
 export interface BalanceView {
   today: DateStr;
-  annual: { accrued: number; used: number; remaining: number };
+  /** accrued: 매달 적립, granted: 리드의 특별 지급(ACTIVE), used: 대기+승인 */
+  annual: { accrued: number; granted: number; used: number; remaining: number };
   /** 이번 달, 다음 달 */
   remote: { month: string; used: number; remaining: number }[];
   off: {
@@ -48,6 +49,7 @@ export class BalancesService {
     const facts = await loadBalanceFacts(m, userId);
 
     const accrued = accruedAnnualLeave(user.hiredAt, today);
+    const granted = grantedAnnualDays(facts.annualGrants, today);
     const thisMonth = yearMonth(today);
     const nextMonth = yearMonth(addMonthsClamped(`${thisMonth}-01`, 1));
 
@@ -55,8 +57,9 @@ export class BalancesService {
       today,
       annual: {
         accrued,
+        granted,
         used: facts.activeAnnualCount,
-        remaining: annualRemaining(accrued, facts.activeAnnualCount),
+        remaining: annualRemaining(accrued + granted, facts.activeAnnualCount),
       },
       remote: [
         remoteUsage(thisMonth, facts.activeRemoteDates),

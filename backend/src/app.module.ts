@@ -5,6 +5,7 @@ import { AccessModule } from './access/access.module.js';
 import { IpStage1Guard } from './access/ip-stage1.guard.js';
 import { IpStage2Guard } from './access/ip-stage2.guard.js';
 import { ActivityLogModule } from './activity-log/activity-log.module.js';
+import { AnnualGrantsModule } from './annual-grants/annual-grants.module.js';
 import { AttendanceModule } from './attendance/attendance.module.js';
 import { AuthModule } from './auth/auth.module.js';
 import { JwtAuthGuard } from './auth/jwt-auth.guard.js';
@@ -28,6 +29,7 @@ import { HolidaysModule } from './holidays/holidays.module.js';
     AttendanceModule,
     RequestsModule,
     SettlementsModule,
+    AnnualGrantsModule,
     // 개발 모드 전용 도구(시계 조작, 테스트 데이터 초기화). 운영 모드에서는 등록하지 않아 404.
     ...(env.nodeEnv === 'production' ? [] : [DevModule]),
   ],

@@ -3,6 +3,7 @@ import { InjectDataSource } from '@nestjs/typeorm';
 import { Between, In, IsNull, Not, type DataSource } from 'typeorm';
 import { CLOCK, type Clock } from '../clock/clock.js';
 import { addDays, addMonthsClamped, toSeoulDate } from '../common/date-time.js';
+import { AnnualGrant } from '../database/entities/annual-grant.entity.js';
 import { Attendance } from '../database/entities/attendance.entity.js';
 import { WorkRequest } from '../database/entities/request.entity.js';
 import { User } from '../database/entities/user.entity.js';
@@ -17,6 +18,7 @@ import {
   type SettlementSummary,
 } from '../domain/settlement.js';
 import { HolidaysService } from '../holidays/holidays.service.js';
+import { toAnnualGrantFacts } from '../requests/balance-facts.js';
 
 export interface SettlementRow {
   userId: number;
@@ -98,15 +100,16 @@ export class SettlementsService {
     const to = addDays(addMonthsClamped(from, 1), -1);
     const m = this.dataSource.manager;
     const who = userId ? { userId } : {};
-    const [holidays, attendances, approved, active, grantRows] = await Promise.all([
+    const [holidays, attendances, approved, active, grantRows, annualGrantRows] = await Promise.all([
       this.holidays.setBetween(from, to),
       m.find(Attendance, { where: { workDate: Between(from, to), ...who } }),
       m.find(WorkRequest, { where: { targetDate: Between(from, to), status: RequestStatus.APPROVED, ...who } }),
       // 잔여용: 날짜와 무관한 현재 유효 신청과 OFF 지급 건 전체
       m.find(WorkRequest, { where: { status: In([RequestStatus.PENDING, RequestStatus.APPROVED]), ...who } }),
       m.find(Attendance, { where: { requestId: Not(IsNull()), checkOutAt: Not(IsNull()), ...who } }),
+      m.find(AnnualGrant, { where: { ...who } }),
     ]);
-    return { today: toSeoulDate(this.clock.now()), holidays, attendances, approved, active, grantRows };
+    return { today: toSeoulDate(this.clock.now()), holidays, attendances, approved, active, grantRows, annualGrantRows };
   }
 
   private balance(user: User, month: string, ctx: Awaited<ReturnType<SettlementsService['load']>>): BalanceAsOf {
@@ -123,6 +126,7 @@ export class SettlementsService {
           usedAttendanceId: r.usedAttendanceId,
         })),
       offGrants: toOffGrants(ctx.grantRows.filter((a) => a.userId === user.id)),
+      annualGrants: toAnnualGrantFacts(ctx.annualGrantRows.filter((g) => g.userId === user.id)),
     });
   }
 

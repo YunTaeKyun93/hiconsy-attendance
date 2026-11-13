@@ -15,3 +15,34 @@ export function accruedAnnualLeave(hiredAt: DateStr, today: DateStr): number {
 export function annualRemaining(accrued: number, activeCount: number): number {
   return accrued - activeCount;
 }
+
+/** 특별 연차 지급분 (DESIGN.md 14-3). 판정에 필요한 부분만. */
+export interface AnnualGrantFact {
+  days: number;
+  /** 지급일 = granted_at의 한국 날짜 */
+  grantDate: DateStr;
+  /** 취소일 = canceled_at의 한국 날짜. 취소되지 않았으면 null */
+  canceledOn: DateStr | null;
+}
+
+/**
+ * 기준일 시점에 유효한 특별 연차 일수 합: 기준일까지 지급됐고, 기준일까지 취소되지 않은 것.
+ * 취소 시각을 저장하므로 과거 기준일도 정확하다(기준일 뒤에 취소된 지급분은 그날엔 유효).
+ */
+export function grantedAnnualDays(grants: readonly AnnualGrantFact[], asOf: DateStr): number {
+  return grants
+    .filter((g) => g.grantDate <= asOf && (g.canceledOn === null || g.canceledOn > asOf))
+    .reduce((sum, g) => sum + g.days, 0);
+}
+
+/**
+ * 특별 연차 취소 판정: 취소 후에도 잔여가 음수가 되면 안 된다(이미 그 연차를 써버린 경우).
+ * remainingNow는 이 지급분을 포함한 현재 잔여.
+ */
+export function judgeGrantCancel(
+  remainingNow: number,
+  days: number,
+): { ok: true } | { ok: false; remainingNow: number; remainingAfter: number } {
+  const remainingAfter = remainingNow - days;
+  return remainingAfter >= 0 ? { ok: true } : { ok: false, remainingNow, remainingAfter };
+}

@@ -16,6 +16,7 @@ import type { AuthUser } from '../common/request-context.js';
 import { WorkRequest } from '../database/entities/request.entity.js';
 import { User } from '../database/entities/user.entity.js';
 import { RequestStatus, RequestType, UserRole } from '../database/enums.js';
+import { grantedAnnualDays } from '../domain/annual-leave.js';
 import { canApprove, canCancel } from '../domain/business-day.js';
 import { normalizeIp } from '../domain/ip-access.js';
 import {
@@ -110,6 +111,7 @@ export class RequestsService {
             (r) => r.targetDate === input.targetDate,
           ),
           hiredAt: user.hiredAt,
+          annualGrantedDays: grantedAnnualDays(facts.annualGrants, today),
           activeAnnualCount: facts.activeAnnualCount,
           activeRemoteDates: facts.activeRemoteDates,
           offGrants: facts.offGrants,

@@ -1,6 +1,6 @@
 import { addDays, addMonthsClamped, type DateStr } from '../common/date-time.js';
 import { RequestType } from '../database/enums.js';
-import { accruedAnnualLeave, annualRemaining } from './annual-leave.js';
+import { accruedAnnualLeave, annualRemaining, grantedAnnualDays, type AnnualGrantFact } from './annual-leave.js';
 import { summarizeAttendance } from './attendance-summary.js';
 import { classifyDay } from './day-type.js';
 import { offRemaining, type OffGrant } from './off.js';
@@ -158,6 +158,8 @@ export interface BalanceAsOfInput {
     usedAttendanceId: number | null;
   }>;
   offGrants: readonly OffGrant[];
+  /** 특별 연차 지급분. 기준일 시점에 유효한 것(지급됨, 아직 취소 안 됨)만 더한다 */
+  annualGrants: readonly AnnualGrantFact[];
 }
 
 export interface BalanceAsOf {
@@ -187,7 +189,10 @@ export function balancesAsOf(input: BalanceAsOfInput): BalanceAsOf {
 
   return {
     asOf: input.asOf,
-    annual: annualRemaining(accruedAnnualLeave(input.hiredAt, input.asOf), annualUsed),
+    annual: annualRemaining(
+      accruedAnnualLeave(input.hiredAt, input.asOf) + grantedAnnualDays(input.annualGrants, input.asOf),
+      annualUsed,
+    ),
     remote: remoteUsage(input.month, remoteDates).remaining,
     off: offRemaining(input.asOf, grantsByAsOf, offUsed),
   };

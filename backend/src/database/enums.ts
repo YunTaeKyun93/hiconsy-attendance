@@ -19,3 +19,6 @@ export const RequestStatus = {
   CANCELED: 'CANCELED',
 } as const;
 export type RequestStatus = (typeof RequestStatus)[keyof typeof RequestStatus];
+
+export const AnnualGrantStatus = { ACTIVE: 'ACTIVE', CANCELED: 'CANCELED' } as const;
+export type AnnualGrantStatus = (typeof AnnualGrantStatus)[keyof typeof AnnualGrantStatus];

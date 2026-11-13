@@ -26,6 +26,8 @@ export interface SubmissionFacts {
   /** 같은 날짜에 PENDING·APPROVED 신청이 이미 있는지 */
   hasActiveOnDate: boolean;
   hiredAt: DateStr;
+  /** 오늘까지 받은 ACTIVE 특별 연차 일수 (DESIGN.md 14-3) */
+  annualGrantedDays: number;
   /** PENDING·APPROVED 연차 수 */
   activeAnnualCount: number;
   /** PENDING·APPROVED 재택 대상일들 */
@@ -67,7 +69,7 @@ export function judgeSubmission(f: SubmissionFacts): SubmissionJudgement {
     case RequestType.ANNUAL: {
       // 신청 시점(오늘) 잔여로 검사한다. 미래 날짜도 아직 생기지 않은 연차로는 못 쓴다.
       const remaining = annualRemaining(
-        accruedAnnualLeave(f.hiredAt, f.today),
+        accruedAnnualLeave(f.hiredAt, f.today) + f.annualGrantedDays,
         f.activeAnnualCount,
       );
       return remaining >= 1

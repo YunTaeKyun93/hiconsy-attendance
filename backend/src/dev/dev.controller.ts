@@ -46,13 +46,15 @@ export class DevController {
   }
 
   /**
-   * 테스트 데이터 초기화: 출퇴근·신청·이력을 비우고 시계를 실제 시각으로 되돌린다. 사용자·공휴일은 유지.
+   * 테스트 데이터 초기화: 출퇴근·신청·특별 연차·이력을 비우고 시계를 실제 시각으로 되돌린다. 사용자·공휴일은 유지.
    * "행을 삭제하지 않는다"·"이력은 쓰기 전용" 규칙의 개발 모드 전용 예외(DESIGN.md 13장).
    */
   @Post('reset')
   @HttpCode(200)
   async reset(): Promise<DevClockView> {
-    await this.dataSource.query('TRUNCATE TABLE attendances, requests, activity_logs RESTART IDENTITY');
+    await this.dataSource.query(
+      'TRUNCATE TABLE attendances, requests, annual_grants, activity_logs RESTART IDENTITY',
+    );
     this.clock.reset();
     return this.view();
   }

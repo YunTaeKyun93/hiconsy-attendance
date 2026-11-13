@@ -42,7 +42,7 @@ export interface MyAttendance {
 
 export interface BalanceView {
   today: string
-  annual: { accrued: number; used: number; remaining: number }
+  annual: { accrued: number; granted: number; used: number; remaining: number }
   remote: { month: string; used: number; remaining: number }[]
   off: {
     remaining: number
@@ -155,4 +155,17 @@ export interface SettlementDetail extends SettlementRow {
   month: string
   today: string
   days: SettlementDay[]
+}
+
+export interface AnnualGrantView {
+  id: number
+  userId: number
+  userName: string
+  days: number
+  reason: string
+  status: 'ACTIVE' | 'CANCELED'
+  grantedByName: string
+  grantedAt: string
+  canceledByName: string | null
+  canceledAt: string | null
 }

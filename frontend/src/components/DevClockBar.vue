@@ -63,9 +63,9 @@ async function reset() {
   refresh.bump()
 }
 
-/** 출퇴근·신청·이력을 비우고 시계를 실제 시각으로. 사용자·공휴일은 유지. */
+/** 출퇴근·신청·특별 연차·이력을 비우고 시계를 실제 시각으로. 사용자·공휴일은 유지. */
 async function resetData() {
-  if (!confirm('출퇴근·신청·이력을 모두 지우고 시계를 실제 시각으로 되돌립니다.\n사용자와 공휴일은 유지됩니다. 계속할까요?')) return
+  if (!confirm('출퇴근·신청·특별 연차·이력을 모두 지우고 시계를 실제 시각으로 되돌립니다.\n사용자와 공휴일은 유지됩니다. 계속할까요?')) return
   error.value = ''
   try {
     apply(await api<DevClockView>('/dev/reset', { method: 'POST' }))

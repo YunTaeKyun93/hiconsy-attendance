@@ -24,6 +24,7 @@ async function logout() {
           <v-btn :to="{ name: 'board' }">팀 보드</v-btn>
           <v-btn :to="{ name: 'irregular' }">미기록·직접 입력</v-btn>
           <v-btn :to="{ name: 'approvals' }">승인</v-btn>
+          <v-btn :to="{ name: 'grants' }">특별 연차</v-btn>
         </template>
         <v-divider vertical class="mx-2" />
         <span class="text-body-2 mr-2">{{ auth.user.name }}<span v-if="auth.isLead"> (리드)</span></span>

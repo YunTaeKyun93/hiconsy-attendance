@@ -41,6 +41,12 @@ const router = createRouter({
       component: () => import('@/views/LeadApprovalsView.vue'),
       meta: { auth: true, lead: true },
     },
+    {
+      path: '/lead/grants',
+      name: 'grants',
+      component: () => import('@/views/LeadGrantsView.vue'),
+      meta: { auth: true, lead: true },
+    },
     { path: '/:pathMatch(.*)*', redirect: '/' },
   ],
 })
