@@ -6,11 +6,12 @@ import {
   PrimaryGeneratedColumn,
   type Relation,
 } from 'typeorm';
+import type { ActivityAction, ActivityPayload } from '../../activity-log/activity-log.types.js';
 import { User } from './user.entity.js';
 
 /**
  * 쓰기 전용 이력. 어떤 비즈니스 로직도 이 테이블을 읽지 않는다.
- * TODO(Phase 2): action과 payload를 행동별 유니언 타입으로 좁힌다.
+ * action과 payload의 짝은 ActivityLogService.write(ActivityEntry)가 강제한다.
  */
 @Entity('activity_logs')
 export class ActivityLog {
@@ -25,7 +26,7 @@ export class ActivityLog {
   user: Relation<User> | null;
 
   @Column({ type: 'varchar', length: 50 })
-  action: string;
+  action: ActivityAction;
 
   @Column({ name: 'target_type', type: 'varchar', length: 30, nullable: true })
   targetType: string | null;
@@ -37,7 +38,7 @@ export class ActivityLog {
   ip: string;
 
   @Column({ type: 'jsonb' })
-  payload: Record<string, unknown>;
+  payload: ActivityPayload;
 
   /** 주입한 시계 기준 */
   @Column({ name: 'occurred_at', type: 'timestamptz' })

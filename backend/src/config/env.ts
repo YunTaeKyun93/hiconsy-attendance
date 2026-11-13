@@ -33,4 +33,12 @@ export const env = {
   port: Number(optional('PORT') ?? 3000),
   nodeEnv: optional('NODE_ENV') ?? 'development',
   holidayApiKey: optional('HOLIDAY_API_KEY'),
+  // 아래 값은 API 서버만 쓴다. 시드·동기화 CLI가 이 값 없이도 돌도록 읽을 때 검사한다.
+  get labIps(): string {
+    return required('LAB_IPS');
+  },
+  get jwtSecret(): string {
+    return required('JWT_SECRET');
+  },
+  jwtExpiresHours: Number(optional('JWT_EXPIRES_HOURS') ?? 12),
 } as const;
