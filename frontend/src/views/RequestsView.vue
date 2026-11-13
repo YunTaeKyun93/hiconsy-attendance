@@ -137,7 +137,14 @@ watch(() => refresh.tick, load)
                 </td>
                 <td><RequestDetail :request="r" /></td>
                 <td>{{ r.reason }}</td>
-                <td>
+                <td class="text-no-wrap">
+                  <v-btn
+                    :href="`/api/requests/${r.id}/pdf`"
+                    size="small"
+                    variant="text"
+                    icon="mdi-file-pdf-box"
+                    title="신청서 PDF"
+                  />
                   <v-btn v-if="r.cancelable" size="small" variant="text" color="error" :loading="canceling === r.id" @click="cancel(r)">
                     취소
                   </v-btn>

@@ -64,6 +64,7 @@ watch(() => refresh.tick, load)
             <td>{{ r.reason }}</td>
             <td class="text-no-wrap">{{ kstDate(r.createdAt) }}</td>
             <td class="text-no-wrap">
+              <v-btn :href="`/api/requests/${r.id}/pdf`" size="small" variant="text" icon="mdi-file-pdf-box" title="신청서 PDF" />
               <v-btn
                 size="small"
                 color="success"

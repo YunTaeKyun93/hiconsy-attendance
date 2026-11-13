@@ -7,6 +7,7 @@ import {
   ParseIntPipe,
   Post,
   Req,
+  StreamableFile,
 } from '@nestjs/common';
 import { CurrentUser, Roles } from '../auth/decorators.js';
 import {
@@ -76,6 +77,17 @@ export class RequestsController {
     @Param('id', ParseIntPipe) id: number,
   ): Promise<RequestView> {
     return this.requests.reject(user, clientIp(req), id);
+  }
+
+  /** 신청서 PDF 다운로드 (FR-REQ-03). 본인 또는 리드. */
+  @Get('requests/:id/pdf')
+  async pdf(@CurrentUser() user: AuthUser, @Param('id', ParseIntPipe) id: number): Promise<StreamableFile> {
+    const { filename, buffer } = await this.requests.pdf(user, id);
+    return new StreamableFile(buffer, {
+      type: 'application/pdf',
+      disposition: `attachment; filename="${filename}"`,
+      length: buffer.length,
+    });
   }
 
   @Get('balances/me')

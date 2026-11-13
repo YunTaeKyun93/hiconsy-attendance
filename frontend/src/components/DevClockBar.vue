@@ -1,5 +1,5 @@
 <script setup lang="ts">
-// 개발 모드 시계 (DESIGN.md 13장). 서버가 /api/dev/clock을 열어 둔 경우(개발 모드)에만 보인다.
+// 개발 모드 시계·테스트 데이터 초기화 (DESIGN.md 13장). 서버가 /api/dev를 열어 둔 경우(개발 모드)에만 보인다.
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { api, ApiError, errorMessage } from '@/api/client'
 import type { DevClockView } from '@/api/types'
@@ -63,6 +63,18 @@ async function reset() {
   refresh.bump()
 }
 
+/** 출퇴근·신청·이력을 비우고 시계를 실제 시각으로. 사용자·공휴일은 유지. */
+async function resetData() {
+  if (!confirm('출퇴근·신청·이력을 모두 지우고 시계를 실제 시각으로 되돌립니다.\n사용자와 공휴일은 유지됩니다. 계속할까요?')) return
+  error.value = ''
+  try {
+    apply(await api<DevClockView>('/dev/reset', { method: 'POST' }))
+    refresh.bump()
+  } catch (e) {
+    error.value = errorMessage(e)
+  }
+}
+
 function setInput() {
   if (!date.value || !time.value) return
   void setTo(`${date.value}T${toTimeStr(time.value)}+09:00`)
@@ -116,6 +128,9 @@ onBeforeUnmount(() => window.clearInterval(timer))
       </v-btn>
       <v-divider vertical />
       <v-btn size="small" variant="outlined" @click="reset">실제 시각으로</v-btn>
+      <v-btn size="small" color="red-lighten-1" variant="flat" prepend-icon="mdi-delete-sweep" @click="resetData">
+        테스트 데이터 초기화
+      </v-btn>
       <span v-if="error" class="text-error text-body-2">{{ error }}</span>
     </div>
   </v-footer>

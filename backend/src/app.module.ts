@@ -11,7 +11,10 @@ import { JwtAuthGuard } from './auth/jwt-auth.guard.js';
 import { RolesGuard } from './auth/roles.guard.js';
 import { ClockModule } from './clock/clock.module.js';
 import { RequestsModule } from './requests/requests.module.js';
+import { SettlementsModule } from './settlements/settlements.module.js';
+import { env } from './config/env.js';
 import { dataSourceOptions } from './database/data-source.js';
+import { DevModule } from './dev/dev.module.js';
 import { HolidaysModule } from './holidays/holidays.module.js';
 
 @Module({
@@ -24,6 +27,9 @@ import { HolidaysModule } from './holidays/holidays.module.js';
     AuthModule,
     AttendanceModule,
     RequestsModule,
+    SettlementsModule,
+    // 개발 모드 전용 도구(시계 조작, 테스트 데이터 초기화). 운영 모드에서는 등록하지 않아 404.
+    ...(env.nodeEnv === 'production' ? [] : [DevModule]),
   ],
   // 전역 가드는 아래 순서대로 실행된다. 순서를 바꾸지 않는다.
   // ① IP 1단계(모든 요청) → ② JWT(@Public 제외) → ③ IP 2단계(@Public 제외) → ④ 역할(@Roles만)

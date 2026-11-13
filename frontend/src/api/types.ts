@@ -101,3 +101,58 @@ export interface SubmitRequestBody {
   startTime?: string
   endTime?: string
 }
+
+export interface SettlementSummary {
+  attendanceDays: number
+  totalWorkSeconds: number
+  late: number
+  earlyLeave: number
+  unrecorded: number
+  manual: number
+  absent: number
+  annual: number
+  remote: number
+  halfOff: number
+  weekendWorkDays: number
+  weekendWorkSeconds: number
+  offGranted: number
+}
+
+export interface SettlementDay {
+  date: string
+  dayType: DayType
+  checkInAt: string | null
+  checkOutAt: string | null
+  manual: boolean
+  late: boolean | null
+  earlyLeave: boolean | null
+  workSeconds: number | null
+  unrecorded: boolean
+  absent: boolean
+}
+
+export interface SettlementBalance {
+  asOf: string
+  annual: number
+  remote: number
+  off: number
+}
+
+export interface SettlementRow {
+  userId: number
+  name: string
+  summary: SettlementSummary
+  balance: SettlementBalance
+}
+
+export interface SettlementList {
+  month: string
+  today: string
+  rows: SettlementRow[]
+}
+
+export interface SettlementDetail extends SettlementRow {
+  month: string
+  today: string
+  days: SettlementDay[]
+}

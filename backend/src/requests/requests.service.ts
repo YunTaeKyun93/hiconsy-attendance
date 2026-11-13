@@ -24,6 +24,7 @@ import {
 } from '../domain/request-submission.js';
 import { HolidaysService } from '../holidays/holidays.service.js';
 import { loadBalanceFacts } from './balance-facts.js';
+import { buildRequestPdf } from './request-pdf.js';
 import {
   actionRefusal,
   submitRefusal,
@@ -282,6 +283,38 @@ export class RequestsService {
     });
     const now = this.clock.now();
     return rows.map((r) => toView(r, now));
+  }
+
+  // ── 신청서 PDF ───────────────────────────────────────
+
+  /** 본인 또는 리드만. 남의 신청은 존재 여부를 드러내지 않는다(404). */
+  async pdf(actor: AuthUser, id: number): Promise<{ filename: string; buffer: Buffer }> {
+    const r = await this.dataSource.getRepository(WorkRequest).findOne({
+      where: { id },
+      relations: { user: true, usedAttendance: true, reviewer: true },
+    });
+    if (!r || (r.userId !== actor.id && actor.role !== UserRole.LEAD)) throw actionRefusal('NOT_FOUND');
+
+    const buffer = await buildRequestPdf(
+      {
+        id: r.id,
+        requesterName: r.user.name,
+        requesterLoginId: r.user.loginId,
+        type: r.type,
+        targetDate: r.targetDate,
+        status: r.status,
+        reason: r.reason,
+        allowedIp: r.allowedIp,
+        startTime: r.startTime,
+        endTime: r.endTime,
+        offGrantWorkDate: r.usedAttendance?.workDate ?? null,
+        createdAt: r.createdAt,
+        reviewerName: r.reviewer?.name ?? null,
+        reviewedAt: r.reviewedAt,
+      },
+      this.clock.now(),
+    );
+    return { filename: `request-${r.id}-${r.targetDate}.pdf`, buffer };
   }
 
   // ── 내부 ─────────────────────────────────────────────

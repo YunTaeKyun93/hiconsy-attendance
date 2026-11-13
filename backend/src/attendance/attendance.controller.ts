@@ -1,7 +1,7 @@
 import { BadRequestException, Body, Controller, Get, HttpCode, Inject, Post, Query, Req } from '@nestjs/common';
 import { CurrentUser, Roles } from '../auth/decorators.js';
 import { CLOCK, type Clock } from '../clock/clock.js';
-import { toSeoulDate } from '../common/date-time.js';
+import { isValidMonthStr, toSeoulDate } from '../common/date-time.js';
 import { clientIp, type AppRequest, type AuthUser } from '../common/request-context.js';
 import { UserRole } from '../database/enums.js';
 import {
@@ -11,8 +11,6 @@ import {
   type IrregularRow,
   type MyAttendanceView,
 } from './attendance.service.js';
-
-const MONTH_RE = /^\d{4}-(0[1-9]|1[0-2])$/;
 
 @Controller()
 export class AttendanceController {
@@ -61,7 +59,7 @@ export class AttendanceController {
   @Roles(UserRole.LEAD)
   irregular(@Query('month') month?: string): Promise<IrregularRow[]> {
     const m = month ?? toSeoulDate(this.clock.now()).slice(0, 7);
-    if (!MONTH_RE.test(m)) {
+    if (!isValidMonthStr(m)) {
       throw new BadRequestException({ statusCode: 400, code: 'INVALID_INPUT', message: 'month(YYYY-MM)를 입력하세요.' });
     }
     return this.attendance.irregular(m);

@@ -112,3 +112,13 @@ export function isValidDateStr(value: string): boolean {
 export function isValidTimeStr(value: string): boolean {
   return TIME_RE.test(value);
 }
+
+/** 'YYYY-MM' 형식인지 */
+export function isValidMonthStr(value: string): boolean {
+  return /^\d{4}-(0[1-9]|1[0-2])$/.test(value);
+}
+
+/** 시각 → 'YYYY-MM-DD HH:MM:SS' (KST) */
+export function toSeoulDateTime(instant: Date): string {
+  return `${toSeoulDate(instant)} ${toSeoulTime(instant)}`;
+}

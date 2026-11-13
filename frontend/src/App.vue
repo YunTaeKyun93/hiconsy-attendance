@@ -19,6 +19,7 @@ async function logout() {
       <template v-if="auth.user">
         <v-btn :to="{ name: 'home' }" exact>내 근태</v-btn>
         <v-btn :to="{ name: 'requests' }">신청</v-btn>
+        <v-btn :to="{ name: 'settlement' }">월별 정산</v-btn>
         <template v-if="auth.isLead">
           <v-btn :to="{ name: 'board' }">팀 보드</v-btn>
           <v-btn :to="{ name: 'irregular' }">미기록·직접 입력</v-btn>

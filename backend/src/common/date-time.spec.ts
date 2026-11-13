@@ -4,11 +4,13 @@ import {
   addMonthsClamped,
   dayOfWeek,
   isValidDateStr,
+  isValidMonthStr,
   isValidTimeStr,
   isWeekend,
   seoulToInstant,
   timeToSeconds,
   toSeoulDate,
+  toSeoulDateTime,
   toSeoulTime,
   yearMonth,
 } from './date-time.js';
@@ -124,5 +126,16 @@ describe('timeToSeconds / 형식 검사', () => {
     expect(isValidTimeStr('07:00:00')).toBe(true);
     expect(isValidTimeStr('24:00:00')).toBe(false);
     expect(isValidTimeStr('07:00')).toBe(false);
+  });
+});
+
+describe('isValidMonthStr / toSeoulDateTime', () => {
+  it('YYYY-MM만 허용', () => {
+    expect(isValidMonthStr('2026-11')).toBe(true);
+    expect(isValidMonthStr('2026-13')).toBe(false);
+    expect(isValidMonthStr('2026-1')).toBe(false);
+  });
+  it('KST 날짜와 시각', () => {
+    expect(toSeoulDateTime(new Date('2026-11-15T15:30:00Z'))).toBe('2026-11-16 00:30:00');
   });
 });
