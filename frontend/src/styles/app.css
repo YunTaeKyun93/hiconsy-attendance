@@ -9,6 +9,16 @@
   background: rgb(var(--v-theme-surface));
 }
 
+/* 선택한 행: 고정 칸도 같은 색(불투명 배경 위에 강조색을 겹침) */
+.row-selected > td {
+  background: rgba(var(--v-theme-primary), 0.08);
+}
+.table-sticky-first .row-selected > td:first-child {
+  background:
+    linear-gradient(rgba(var(--v-theme-primary), 0.08), rgba(var(--v-theme-primary), 0.08)),
+    rgb(var(--v-theme-surface));
+}
+
 .pre-line {
   white-space: pre-line;
 }

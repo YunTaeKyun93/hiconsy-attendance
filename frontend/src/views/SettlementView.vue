@@ -97,7 +97,7 @@ watch(month, load)
             v-for="r in list.rows"
             :key="r.userId"
             class="cursor-pointer"
-            :style="selected === r.userId ? 'background: rgba(var(--v-theme-primary), 0.08)' : ''"
+            :class="{ 'row-selected': selected === r.userId }"
             @click="select(r.userId)"
           >
             <td class="text-no-wrap">{{ r.name }}</td>
