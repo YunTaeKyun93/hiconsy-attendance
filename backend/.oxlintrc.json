@@ -1,0 +1,18 @@
+{
+  "$schema": "../node_modules/oxlint/configuration_schema.json",
+  "jsPlugins": ["./lint/clock-plugin.js"],
+  "rules": {
+    "typescript/no-explicit-any": "off",
+    "typescript/no-floating-promises": "error",
+    "clock/no-direct-now": "error"
+  },
+  "overrides": [
+    {
+      "files": ["src/clock/system-clock.ts"],
+      "rules": { "clock/no-direct-now": "off" }
+    }
+  ],
+  "env": {
+    "node": true
+  }
+}
