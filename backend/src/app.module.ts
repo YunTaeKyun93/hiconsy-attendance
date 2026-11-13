@@ -17,7 +17,7 @@ import { HolidaysModule } from './holidays/holidays.module.js';
 @Module({
   imports: [
     TypeOrmModule.forRoot(dataSourceOptions),
-    ClockModule,
+    ClockModule.forRoot(),
     HolidaysModule,
     ActivityLogModule,
     AccessModule,

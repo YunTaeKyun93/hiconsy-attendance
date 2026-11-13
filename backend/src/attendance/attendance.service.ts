@@ -1,10 +1,12 @@
 import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { IsNull, QueryFailedError, type Repository } from 'typeorm';
+import { Between, In, IsNull, QueryFailedError, type Repository } from 'typeorm';
 import { ActivityLogService } from '../activity-log/activity-log.service.js';
 import type { AttendanceAttempt } from '../activity-log/activity-log.types.js';
 import { CLOCK, type Clock } from '../clock/clock.js';
 import {
+  addDays,
+  addMonthsClamped,
   isValidDateStr,
   isValidTimeStr,
   seoulToInstant,
@@ -12,6 +14,7 @@ import {
   type DateStr,
 } from '../common/date-time.js';
 import { Attendance } from '../database/entities/attendance.entity.js';
+import { User } from '../database/entities/user.entity.js';
 import { WorkRequest } from '../database/entities/request.entity.js';
 import { CheckOutSource, RequestStatus } from '../database/enums.js';
 import {
@@ -24,8 +27,10 @@ import {
   type InstantRange,
 } from '../domain/attendance-rules.js';
 import {
+  presenceOf,
   summarizeAttendance,
   type AttendanceSummary,
+  type Presence,
 } from '../domain/attendance-summary.js';
 import { classifyDay } from '../domain/day-type.js';
 import { ipMatches } from '../domain/ip-access.js';
@@ -65,6 +70,26 @@ export interface MyAttendanceView {
   todayType: DayType;
   attendance: AttendanceView | null;
   unrecorded: UnrecordedView[];
+}
+
+export interface BoardRow {
+  userId: number;
+  name: string;
+  dayType: DayType;
+  presence: Presence;
+  attendance: AttendanceView | null;
+}
+
+export interface BoardView {
+  today: DateStr;
+  rows: BoardRow[];
+}
+
+export interface IrregularRow extends AttendanceView {
+  userId: number;
+  name: string;
+  /** 미기록(과거 날짜, 퇴근 없음) 또는 직접 입력 */
+  kind: 'UNRECORDED' | 'MANUAL';
 }
 
 interface Actor {
@@ -264,6 +289,84 @@ export class AttendanceService {
         : null,
       unrecorded,
     };
+  }
+
+  // ── 리드: 팀 보드 ────────────────────────────────────
+
+  /** 오늘 사용자별 날짜 유형과 출근 상태. PENDING 신청은 유형을 바꾸지 않는다. */
+  async board(): Promise<BoardView> {
+    const today = toSeoulDate(this.clock.now());
+    const [users, holidays, approved, rows] = await Promise.all([
+      this.attendances.manager.find(User, { order: { id: 'ASC' } }),
+      this.holidays.setFor([today]),
+      this.requests.find({ where: { targetDate: today, status: RequestStatus.APPROVED } }),
+      this.attendances.find({ where: { workDate: today } }),
+    ]);
+    const approvedBy = new Map(approved.map((r) => [r.userId, r.type]));
+    const rowBy = new Map(rows.map((r) => [r.userId, r]));
+
+    return {
+      today,
+      rows: users.map((u) => {
+        const row = rowBy.get(u.id) ?? null;
+        // 주말 근무 행은 출근 때 대조한 신청이 있으므로 유형이 WEEKEND_WORK다.
+        const dayType = row?.requestId
+          ? DayType.WEEKEND_WORK
+          : classifyDay(today, holidays, approvedBy.get(u.id) ?? null);
+        return {
+          userId: u.id,
+          name: u.name,
+          dayType,
+          presence: presenceOf(dayType, row),
+          attendance: row ? toView(row, dayType) : null,
+        };
+      }),
+    };
+  }
+
+  // ── 리드: 미기록·직접 입력 목록 ───────────────────────
+
+  /** month(YYYY-MM)의 미기록 행과 직접 입력 행. 최근 날짜 먼저. */
+  async irregular(month: string): Promise<IrregularRow[]> {
+    const today = toSeoulDate(this.clock.now());
+    const from = `${month}-01`;
+    const to = addDays(addMonthsClamped(from, 1), -1);
+
+    const rows = await this.attendances.find({
+      where: [
+        { workDate: Between(from, to), checkOutAt: IsNull() },
+        { workDate: Between(from, to), checkOutSource: CheckOutSource.MANUAL },
+      ],
+      relations: { user: true },
+      order: { workDate: 'DESC', userId: 'ASC' },
+    });
+    // 오늘 퇴근 전인 행은 아직 미기록이 아니다.
+    const irregular = rows.filter((r) => r.checkOutAt !== null || r.workDate < today);
+    if (irregular.length === 0) return [];
+
+    const [holidays, approved] = await Promise.all([
+      this.holidays.setBetween(from, to),
+      this.requests.find({
+        where: {
+          userId: In([...new Set(irregular.map((r) => r.userId))]),
+          targetDate: Between(from, to),
+          status: RequestStatus.APPROVED,
+        },
+      }),
+    ]);
+    const approvedBy = new Map(approved.map((r) => [`${r.userId}|${r.targetDate}`, r.type]));
+
+    return irregular.map((r) => {
+      const dayType = r.requestId
+        ? DayType.WEEKEND_WORK
+        : classifyDay(r.workDate, holidays, approvedBy.get(`${r.userId}|${r.workDate}`) ?? null);
+      return {
+        ...toView(r, dayType),
+        userId: r.userId,
+        name: r.user.name,
+        kind: r.checkOutAt === null ? ('UNRECORDED' as const) : ('MANUAL' as const),
+      };
+    });
   }
 
   // ── 내부 ─────────────────────────────────────────────

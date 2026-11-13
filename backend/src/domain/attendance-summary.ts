@@ -26,3 +26,11 @@ export function summarizeAttendance(
     earlyLeave: isEarlyLeave(dayType, worked),
   };
 }
+
+/** 팀 보드의 출근 상태. 연차·휴무일은 출근 대상이 아니라 NONE. */
+export type Presence = 'NONE' | 'NOT_CHECKED_IN' | 'WORKING' | 'CHECKED_OUT';
+
+export function presenceOf(dayType: DayType, attendance: { checkOutAt: Date | null } | null): Presence {
+  if (attendance) return attendance.checkOutAt ? 'CHECKED_OUT' : 'WORKING';
+  return dayType === 'ANNUAL' || dayType === 'NON_WORKDAY' ? 'NONE' : 'NOT_CHECKED_IN';
+}

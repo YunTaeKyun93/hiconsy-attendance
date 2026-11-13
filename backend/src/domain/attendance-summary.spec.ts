@@ -1,5 +1,5 @@
 import { seoulToInstant } from '../common/date-time.js';
-import { summarizeAttendance } from './attendance-summary.js';
+import { presenceOf, summarizeAttendance } from './attendance-summary.js';
 import { DayType } from './types.js';
 
 const at = (time: string) => seoulToInstant('2026-11-16', time);
@@ -51,5 +51,18 @@ describe('summarizeAttendance', () => {
       workSeconds: 2 * 3600,
       earlyLeave: null,
     });
+  });
+});
+
+describe('presenceOf', () => {
+  it.each([
+    [DayType.WORKDAY, null, 'NOT_CHECKED_IN'],
+    [DayType.HALF_OFF, null, 'NOT_CHECKED_IN'],
+    [DayType.ANNUAL, null, 'NONE'],
+    [DayType.NON_WORKDAY, null, 'NONE'],
+    [DayType.REMOTE, { checkOutAt: null }, 'WORKING'],
+    [DayType.WEEKEND_WORK, { checkOutAt: at('15:00:00') }, 'CHECKED_OUT'],
+  ] as const)('%s, %o → %s', (dayType, attendance, expected) => {
+    expect(presenceOf(dayType, attendance)).toBe(expected);
   });
 });
