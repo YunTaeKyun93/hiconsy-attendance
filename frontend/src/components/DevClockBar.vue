@@ -54,6 +54,28 @@ async function load() {
   }
 }
 
+/**
+ * 서버 시계가 이 막대 밖에서 바뀌었는지 확인한다(서버 재시작으로 실제 시각 복귀, 다른 탭·API로 변경 등).
+ * 화면에서 흐르는 값과 몇 초 이상 어긋나면 맞추고 화면 데이터를 다시 불러온다.
+ */
+const DRIFT_MS = 3000
+const SYNC_INTERVAL_MS = 5000
+let syncTimer: number | undefined
+async function resync() {
+  if (!available.value || document.hidden) return
+  try {
+    const view = await api<DevClockView>('/dev/clock')
+    const drift = Math.abs(new Date(view.now).getTime() - new Date(currentIso()).getTime())
+    if (drift > DRIFT_MS || view.offsetMs !== offsetMs.value) {
+      apply(view)
+      refresh.bump()
+    }
+  } catch {
+    // 서버가 잠시 내려가 있으면 다음 확인 때 다시 본다.
+  }
+}
+const onVisible = () => void resync()
+
 async function setTo(iso: string) {
   error.value = ''
   try {
@@ -145,9 +167,15 @@ onMounted(async () => {
   timer = window.setInterval(() => {
     if (syncedAt) displayMs.value = syncedServerMs + (performance.now() - syncedAt)
   }, 1000)
+  syncTimer = window.setInterval(() => void resync(), SYNC_INTERVAL_MS)
+  document.addEventListener('visibilitychange', onVisible)
+  window.addEventListener('focus', onVisible)
 })
 onBeforeUnmount(() => {
   window.clearInterval(timer)
+  window.clearInterval(syncTimer)
+  document.removeEventListener('visibilitychange', onVisible)
+  window.removeEventListener('focus', onVisible)
   observer?.disconnect()
 })
 </script>
