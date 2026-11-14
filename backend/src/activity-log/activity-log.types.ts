@@ -99,7 +99,7 @@ interface RequestApproved {
 interface RequestRejected {
   action: 'REQUEST_REJECTED';
   userId: number;
-  payload: { requesterId: number };
+  payload: { requesterId: number; rejectReason: string };
 }
 
 /** 취소·승인·반려 시도 거절. 대상: requests */

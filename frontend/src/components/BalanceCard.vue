@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { BalanceView } from '@/api/types'
 import type { ChipSpec } from '@/theme/status'
+import { shortDate } from '@/utils/format'
 import StatusChip from './StatusChip.vue'
 
 defineProps<{ balance: BalanceView | null }>()
@@ -39,8 +40,15 @@ const GRANT: Record<'USABLE' | 'IN_USE' | 'EXPIRED', ChipSpec> = {
           <div class="text-label-medium text-medium-emphasis">반일 OFF</div>
           <div class="text-headline-small font-weight-bold text-day-off">{{ balance.off.remaining }}회</div>
           <div v-if="balance.off.grants.length === 0" class="text-body-small text-medium-emphasis">보유한 OFF가 없습니다.</div>
-          <div v-for="g in balance.off.grants" :key="g.workDate" class="text-body-small d-flex align-center ga-1 mt-1">
-            {{ g.workDate }} 근무분 · {{ g.expiresOn }}까지
+          <div
+            v-for="g in balance.off.grants"
+            :key="g.workDate"
+            class="text-body-small d-flex flex-wrap align-center ga-1 mt-1"
+            :title="`${g.workDate} 근무분 · ${g.expiresOn}까지`"
+          >
+            <span class="text-no-wrap">{{ shortDate(g.workDate, balance.today) }} 근무분</span>
+            <span>·</span>
+            <span class="text-no-wrap">{{ shortDate(g.expiresOn, balance.today) }}까지</span>
             <StatusChip v-bind="GRANT[g.status]" size="x-small" />
           </div>
         </div>

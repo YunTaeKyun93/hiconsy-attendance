@@ -25,7 +25,7 @@ import {
 } from '../domain/request-submission.js';
 import { HolidaysService } from '../holidays/holidays.service.js';
 import { loadBalanceFacts } from './balance-facts.js';
-import { buildRequestPdf } from './request-pdf.js';
+import { buildRequestPdf, requestPdfFilename } from './request-pdf.js';
 import {
   actionRefusal,
   submitRefusal,
@@ -61,6 +61,8 @@ export interface RequestView {
   offGrantWorkDate: DateStr | null;
   reviewedBy: number | null;
   reviewedAt: string | null;
+  /** REJECTED만 */
+  rejectReason: string | null;
   createdAt: string;
   /** 본인이 지금 취소할 수 있는지 */
   cancelable: boolean;
@@ -219,11 +221,21 @@ export class RequestsService {
   // ── 승인·반려 (리드) ──────────────────────────────────
 
   async approve(actor: AuthUser, ip: string, id: number): Promise<RequestView> {
-    return this.review(actor, ip, id, 'APPROVE');
+    return this.review(actor, ip, id, 'APPROVE', null);
   }
 
-  async reject(actor: AuthUser, ip: string, id: number): Promise<RequestView> {
-    return this.review(actor, ip, id, 'REJECT');
+  /** 반려 사유는 필수. 입력 형식 오류(400)는 이력에 남기지 않는다(제출과 같은 규칙). */
+  async reject(
+    actor: AuthUser,
+    ip: string,
+    id: number,
+    body: unknown,
+  ): Promise<RequestView> {
+    const raw = (body as { reason?: unknown } | undefined)?.reason;
+    const reason = typeof raw === 'string' ? raw.trim() : '';
+    if (reason === '' || reason.length > REASON_MAX)
+      throw badInput(`반려 사유를 1~${REASON_MAX}자로 입력하세요.`);
+    return this.review(actor, ip, id, 'REJECT', reason);
   }
 
   private async review(
@@ -231,6 +243,7 @@ export class RequestsService {
     ip: string,
     id: number,
     attempt: 'APPROVE' | 'REJECT',
+    rejectReason: string | null,
   ) {
     const now = this.clock.now();
     const refuse = (reason: RequestActionRefusal) =>
@@ -249,16 +262,22 @@ export class RequestsService {
       attempt === 'APPROVE' ? RequestStatus.APPROVED : RequestStatus.REJECTED;
     const result = await repo.update(
       { id, status: RequestStatus.PENDING },
-      { status, reviewedBy: actor.id, reviewedAt: now },
+      { status, reviewedBy: actor.id, reviewedAt: now, rejectReason },
     );
     if (!result.affected) throw await refuse('INVALID_STATUS');
 
     await this.logs.write(
-      {
-        action: attempt === 'APPROVE' ? 'REQUEST_APPROVED' : 'REQUEST_REJECTED',
-        userId: actor.id,
-        payload: { requesterId: req.userId },
-      },
+      attempt === 'APPROVE'
+        ? {
+            action: 'REQUEST_APPROVED',
+            userId: actor.id,
+            payload: { requesterId: req.userId },
+          }
+        : {
+            action: 'REQUEST_REJECTED',
+            userId: actor.id,
+            payload: { requesterId: req.userId, rejectReason: rejectReason ?? '' },
+          },
       { ip, targetType: 'request', targetId: id },
     );
     return this.view(id, now);
@@ -313,10 +332,11 @@ export class RequestsService {
         createdAt: r.createdAt,
         reviewerName: r.reviewer?.name ?? null,
         reviewedAt: r.reviewedAt,
+        rejectReason: r.rejectReason,
       },
       this.clock.now(),
     );
-    return { filename: `request-${r.id}-${r.targetDate}.pdf`, buffer };
+    return { filename: requestPdfFilename(r.user.name, r.type, r.targetDate), buffer };
   }
 
   // ── 내부 ─────────────────────────────────────────────
@@ -367,6 +387,7 @@ function toView(r: WorkRequest, now: Date): RequestView {
     offGrantWorkDate: r.usedAttendance?.workDate ?? null,
     reviewedBy: r.reviewedBy,
     reviewedAt: r.reviewedAt?.toISOString() ?? null,
+    rejectReason: r.rejectReason,
     createdAt: r.createdAt.toISOString(),
     cancelable: active && canCancel(now, r.targetDate),
     approvable:

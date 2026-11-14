@@ -4,6 +4,7 @@ import { api, errorMessage } from '@/api/client'
 import type { IrregularRow } from '@/api/types'
 import EmptyState from '@/components/EmptyState.vue'
 import FlagChips from '@/components/FlagChips.vue'
+import MonthField from '@/components/MonthField.vue'
 import StatusChip from '@/components/StatusChip.vue'
 import { useRefreshStore } from '@/stores/refresh'
 import { dayTypeChip } from '@/theme/status'
@@ -39,15 +40,13 @@ watch(month, load)
           미기록·직접 입력
         </span>
         <v-spacer />
-        <v-text-field
+        <MonthField
           v-model="month"
-          type="month"
           label="월 (비우면 이번 달)"
           density="compact"
           variant="outlined"
           hide-details
           clearable
-          lang="ko"
           style="max-width: 240px"
         />
       </v-card-title>

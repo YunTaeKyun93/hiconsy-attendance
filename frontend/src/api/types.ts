@@ -64,6 +64,8 @@ export interface RequestView {
   offGrantWorkDate: string | null
   reviewedBy: number | null
   reviewedAt: string | null
+  /** REJECTED만(기능 도입 전 반려 건은 null) */
+  rejectReason: string | null
   createdAt: string
   cancelable: boolean
   approvable: boolean

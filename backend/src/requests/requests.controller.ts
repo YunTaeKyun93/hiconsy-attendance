@@ -71,21 +71,24 @@ export class RequestsController {
   @Post('requests/:id/reject')
   @HttpCode(200)
   @Roles(UserRole.LEAD)
+  /** body: { reason } 반려 사유(필수, 1~500자) */
   reject(
     @CurrentUser() user: AuthUser,
     @Req() req: AppRequest,
     @Param('id', ParseIntPipe) id: number,
+    @Body() body: unknown,
   ): Promise<RequestView> {
-    return this.requests.reject(user, clientIp(req), id);
+    return this.requests.reject(user, clientIp(req), id, body);
   }
 
   /** 신청서 PDF 다운로드 (FR-REQ-03). 본인 또는 리드. */
   @Get('requests/:id/pdf')
   async pdf(@CurrentUser() user: AuthUser, @Param('id', ParseIntPipe) id: number): Promise<StreamableFile> {
     const { filename, buffer } = await this.requests.pdf(user, id);
+    // 한글 파일 이름은 filename*(RFC 5987)로. filename은 이를 모르는 클라이언트용 ASCII 대체.
     return new StreamableFile(buffer, {
       type: 'application/pdf',
-      disposition: `attachment; filename="${filename}"`,
+      disposition: `attachment; filename="request-${id}.pdf"; filename*=UTF-8''${encodeURIComponent(filename)}`,
       length: buffer.length,
     });
   }

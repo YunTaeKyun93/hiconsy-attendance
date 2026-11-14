@@ -38,6 +38,14 @@ export interface RequestPdfData {
   createdAt: Date;
   reviewerName: string | null;
   reviewedAt: Date | null;
+  /** REJECTED만. 이 기능 전에 반려된 건은 null */
+  rejectReason: string | null;
+}
+
+/** 다운로드 파일 이름: 근태신청서_{이름}_{유형}_{대상일}.pdf (파일 이름에 못 쓰는 문자는 '_'로) */
+export function requestPdfFilename(name: string, type: RequestType, targetDate: DateStr): string {
+  const safe = (s: string) => s.replace(/[\\/:*?"<>|\s]+/g, '_');
+  return `근태신청서_${safe(name)}_${safe(TYPE_LABEL[type])}_${targetDate}.pdf`;
 }
 
 /** 표에 넣을 [항목, 값] 목록. 유형별로 필요한 줄만. */
@@ -64,6 +72,7 @@ export function requestPdfRows(d: RequestPdfData): [string, string][] {
   if (d.reviewedAt && d.status !== 'PENDING' && d.status !== 'CANCELED') {
     rows.push(['처리자', d.reviewerName ?? '-'], ['처리 일시', toSeoulDateTime(d.reviewedAt)]);
   }
+  if (d.status === 'REJECTED') rows.push(['반려 사유', d.rejectReason ?? '-']);
   return rows;
 }
 

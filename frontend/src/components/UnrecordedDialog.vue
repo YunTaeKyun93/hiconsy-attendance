@@ -3,7 +3,8 @@
 import { reactive, ref, watch } from 'vue'
 import { api, errorMessage } from '@/api/client'
 import type { UnrecordedView } from '@/api/types'
-import { kstTime, toTimeStr, withWeekday } from '@/utils/format'
+import { kstTime, withWeekday } from '@/utils/format'
+import TimeField from './TimeField.vue'
 
 const props = defineProps<{ items: UnrecordedView[] }>()
 const open = defineModel<boolean>({ required: true })
@@ -12,6 +13,7 @@ const emit = defineEmits<{ saved: [] }>()
 const times = reactive<Record<string, string>>({})
 const errors = reactive<Record<string, string>>({})
 const saving = ref('')
+const QUICK_TIMES = ['16:00', '18:00', '19:00']
 
 watch(
   () => props.items,
@@ -27,7 +29,7 @@ async function save(item: UnrecordedView) {
   try {
     await api('/attendance/manual-check-out', {
       method: 'POST',
-      body: { workDate: item.workDate, checkOutTime: toTimeStr(times[item.workDate] ?? '') },
+      body: { workDate: item.workDate, checkOutTime: times[item.workDate] ?? '' },
     })
     emit('saved')
   } catch (e) {
@@ -48,16 +50,22 @@ async function save(item: UnrecordedView) {
           <div class="text-body-medium text-medium-emphasis mb-2">
             출근 {{ kstTime(item.checkInAt) }} · 입력 가능 {{ kstTime(item.min) }} ~ {{ kstTime(item.max) }}
           </div>
-          <div class="d-flex ga-2 align-center">
-            <v-text-field
+          <div class="d-flex ga-2 align-start">
+            <TimeField
               v-model="times[item.workDate]"
-              type="time"
-              step="1"
               label="퇴근 시각"
               density="compact"
-              hide-details
+              class="flex-grow-1"
+              :quick="QUICK_TIMES"
+              @enter="times[item.workDate] && save(item)"
             />
-            <v-btn color="primary" :loading="saving === item.workDate" :disabled="!times[item.workDate]" @click="save(item)">
+            <v-btn
+              color="primary"
+              height="40"
+              :loading="saving === item.workDate"
+              :disabled="!times[item.workDate]"
+              @click="save(item)"
+            >
               저장
             </v-btn>
           </div>

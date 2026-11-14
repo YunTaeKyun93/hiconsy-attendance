@@ -3,13 +3,15 @@ import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { api, errorMessage } from '@/api/client'
 import type { BalanceView, RequestType, RequestView, SubmitRequestBody } from '@/api/types'
 import BalanceCard from '@/components/BalanceCard.vue'
+import DateField from '@/components/DateField.vue'
 import EmptyState from '@/components/EmptyState.vue'
 import RequestDetail from '@/components/RequestDetail.vue'
 import StatusChip from '@/components/StatusChip.vue'
+import TimeField from '@/components/TimeField.vue'
 import { useFeedbackStore } from '@/stores/feedback'
 import { useRefreshStore } from '@/stores/refresh'
 import { requestStatusChip, requestTypeChip } from '@/theme/status'
-import { toTimeStr, withWeekday } from '@/utils/format'
+import { withWeekday } from '@/utils/format'
 
 const refresh = useRefreshStore()
 const fb = useFeedbackStore()
@@ -29,6 +31,7 @@ const typeItems = (['ANNUAL', 'REMOTE', 'OFF', 'WEEKEND_WORK'] as RequestType[])
   value,
   title: requestTypeChip(value).label,
 }))
+const QUICK_TIMES = ['09:00', '10:00', '18:00', '19:00']
 
 // 화면 검사는 빈 칸 정도만. 날짜·기한·잔여는 서버가 판정한다.
 const filled = computed(
@@ -54,8 +57,8 @@ async function submit() {
   if (needsWindow.value) {
     Object.assign(body, {
       allowedIp: form.allowedIp.trim(),
-      startTime: toTimeStr(form.startTime),
-      endTime: toTimeStr(form.endTime),
+      startTime: form.startTime,
+      endTime: form.endTime,
     })
   }
   try {
@@ -111,12 +114,12 @@ watch(() => refresh.tick, load)
           <v-card-text>
             <v-form @submit.prevent="submit">
               <v-select v-model="form.type" :items="typeItems" label="유형" variant="outlined" />
-              <v-text-field v-model="form.targetDate" type="date" label="대상일" variant="outlined" lang="ko" />
+              <DateField v-model="form.targetDate" label="대상일" variant="outlined" />
               <template v-if="needsWindow">
                 <v-text-field v-model="form.allowedIp" label="접속 IP" placeholder="예: 192.168.0.5" variant="outlined" />
                 <div class="d-flex flex-wrap ga-2 time-pair">
-                  <v-text-field v-model="form.startTime" type="time" step="1" label="시작" variant="outlined" lang="ko" />
-                  <v-text-field v-model="form.endTime" type="time" step="1" label="종료" variant="outlined" lang="ko" />
+                  <TimeField v-model="form.startTime" label="시작" variant="outlined" :quick="QUICK_TIMES" />
+                  <TimeField v-model="form.endTime" label="종료" variant="outlined" :quick="QUICK_TIMES" />
                 </div>
               </template>
               <v-textarea v-model="form.reason" label="사유" rows="2" counter="500" maxlength="500" variant="outlined" />
@@ -161,7 +164,16 @@ watch(() => refresh.tick, load)
                 <td class="text-no-wrap"><StatusChip v-bind="requestTypeChip(r.type)" size="x-small" /></td>
                 <td><StatusChip v-bind="requestStatusChip(r.status)" /></td>
                 <td class="text-no-wrap"><RequestDetail :request="r" /></td>
-                <td>{{ r.reason }}</td>
+                <td class="reason-cell">
+                  <div class="ellipsis" :title="r.reason">{{ r.reason }}</div>
+                  <div
+                    v-if="r.status === 'REJECTED' && r.rejectReason"
+                    class="ellipsis text-body-small text-status-late"
+                    :title="`반려 사유: ${r.rejectReason}`"
+                  >
+                    반려 사유: {{ r.rejectReason }}
+                  </div>
+                </td>
                 <td class="text-no-wrap">
                   <v-btn
                     :href="`/api/requests/${r.id}/pdf`"
@@ -194,5 +206,16 @@ watch(() => refresh.tick, load)
 <style scoped>
 .time-pair > * {
   flex: 1 1 180px;
+}
+/* 사유 칸은 남는 폭만 쓰고 한 줄로 줄인다. 마우스를 올리면 전체(title) */
+.reason-cell {
+  width: 100%;
+  max-width: 0;
+  min-width: 88px;
+}
+.ellipsis {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 </style>

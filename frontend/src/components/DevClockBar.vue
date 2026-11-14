@@ -5,7 +5,9 @@ import { api, ApiError, errorMessage } from '@/api/client'
 import type { DevClockView } from '@/api/types'
 import { useFeedbackStore } from '@/stores/feedback'
 import { useRefreshStore } from '@/stores/refresh'
-import { kstDate, kstTime, toTimeStr, withWeekday } from '@/utils/format'
+import { kstDate, kstTime, timeLabel, withWeekday } from '@/utils/format'
+import DateField from './DateField.vue'
+import TimeField from './TimeField.vue'
 
 const refresh = useRefreshStore()
 const fb = useFeedbackStore()
@@ -86,9 +88,14 @@ async function resetData() {
   }
 }
 
+/** 날짜를 비우면 현재 서버 날짜(KST)에 시각만 적용 */
 function setInput() {
-  if (!date.value || !time.value) return
-  void setTo(`${date.value}T${toTimeStr(time.value)}+09:00`)
+  const t = time.value
+  if (!t) {
+    error.value = '시각을 24시간 형식으로 입력하세요. (예: 18:30)'
+    return
+  }
+  void setTo(`${date.value || kstDate(currentIso())}T${t}+09:00`)
 }
 
 function shift(ms: number) {
@@ -100,9 +107,21 @@ function at(hhmmss: string) {
   void setTo(`${kstDate(currentIso())}T${hhmmss}+09:00`)
 }
 
+/** 서버 날짜(KST) 다음 날부터 요일(0=일 … 6=토)이 맞는 첫 날로. 시각은 그대로 둔다. */
+function nextDay(match: (dow: number) => boolean) {
+  const iso = currentIso()
+  const [y, m, d] = kstDate(iso).split('-').map(Number)
+  const day = new Date(Date.UTC(y ?? 0, (m ?? 1) - 1, d ?? 1))
+  do day.setUTCDate(day.getUTCDate() + 1)
+  while (!match(day.getUTCDay()))
+  void setTo(`${day.toISOString().slice(0, 10)}T${kstTime(iso)}+09:00`)
+}
+const nextWeekday = () => nextDay((dow) => dow >= 1 && dow <= 5)
+const nextSaturday = () => nextDay((dow) => dow === 6)
+
 // 시계가 흐르므로 경계 정각 대신 여유를 둔다. 10:00:00 정각 경계는 단위 테스트로 검증한다.
 // 09:59:30 = 정상 출근 확인, 10:00:30 = 지각 확인
-const QUICK_TIMES = ['07:00:00', '09:59:30', '10:00:30', '16:00:00', '17:00:00']
+const QUICK_TIMES = ['07:00:00', '09:59:30', '10:00:30', '12:00:00', '16:00:00', '17:00:00', '18:30:00']
 
 const DAY = 86_400_000
 const HOUR = 3_600_000
@@ -143,16 +162,36 @@ onBeforeUnmount(() => {
       <v-btn size="small" variant="text" :icon="expanded ? 'mdi-chevron-down' : 'mdi-chevron-up'" @click="expanded = !expanded" />
     </div>
     <div v-if="expanded" class="d-flex flex-wrap align-center ga-2 w-100 pt-2">
-      <input v-model="date" type="date" class="dev-input" aria-label="날짜" />
-      <input v-model="time" type="time" step="1" class="dev-input" aria-label="시각" />
+      <DateField
+        v-model="date"
+        placeholder="비우면 오늘"
+        aria-label="날짜"
+        density="compact"
+        variant="solo"
+        hide-details
+        clearable
+        class="dev-date"
+      />
+      <TimeField
+        v-model="time"
+        placeholder="18:30"
+        aria-label="시각 (24시간, 예: 18:30)"
+        density="compact"
+        variant="solo"
+        hide-details
+        class="dev-time"
+        @enter="setInput"
+      />
       <v-btn size="small" color="amber" variant="flat" @click="setInput">적용</v-btn>
       <v-divider vertical />
       <v-btn size="small" variant="tonal" @click="shift(-DAY)">-1일</v-btn>
       <v-btn size="small" variant="tonal" @click="shift(DAY)">+1일</v-btn>
       <v-btn size="small" variant="tonal" @click="shift(HOUR)">+1시간</v-btn>
+      <v-btn size="small" variant="tonal" @click="nextWeekday">다음 평일</v-btn>
+      <v-btn size="small" variant="tonal" @click="nextSaturday">다음 토요일</v-btn>
       <v-divider vertical />
       <v-btn v-for="t in QUICK_TIMES" :key="t" size="small" variant="tonal" @click="at(t)">
-        {{ t }}
+        {{ timeLabel(t) }}
       </v-btn>
       <v-divider vertical />
       <v-btn size="small" variant="outlined" @click="reset">실제 시각으로</v-btn>
@@ -174,10 +213,10 @@ onBeforeUnmount(() => {
   flex-direction: column;
   align-items: stretch;
 }
-.dev-input {
-  background: white;
-  color: black;
-  border-radius: 4px;
-  padding: 2px 6px;
+.dev-date {
+  flex: 0 0 190px;
+}
+.dev-time {
+  flex: 0 0 110px;
 }
 </style>

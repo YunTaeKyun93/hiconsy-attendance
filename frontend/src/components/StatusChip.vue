@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { ChipSpec } from '@/theme/status'
 
-withDefaults(defineProps<ChipSpec & { size?: 'x-small' | 'small' | 'default' }>(), { size: 'small', outlined: false })
+withDefaults(defineProps<ChipSpec & { size?: 'x-small' | 'small' | 'default' | 'large' }>(), { size: 'small', outlined: false })
 </script>
 
 <template>

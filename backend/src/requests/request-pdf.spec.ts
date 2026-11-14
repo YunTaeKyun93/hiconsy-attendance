@@ -1,4 +1,4 @@
-import { buildRequestPdf, requestPdfRows, type RequestPdfData } from './request-pdf.js';
+import { buildRequestPdf, requestPdfFilename, requestPdfRows, type RequestPdfData } from './request-pdf.js';
 
 const base: RequestPdfData = {
   id: 7,
@@ -15,6 +15,7 @@ const base: RequestPdfData = {
   createdAt: new Date('2026-11-13T01:00:00Z'),
   reviewerName: '리드',
   reviewedAt: new Date('2026-11-13T02:30:00Z'),
+  rejectReason: null,
 };
 
 describe('requestPdfRows', () => {
@@ -65,5 +66,35 @@ describe('buildRequestPdf', () => {
     const buf = await buildRequestPdf(base, new Date('2026-11-16T00:30:00Z'));
     expect(buf.subarray(0, 5).toString()).toBe('%PDF-');
     expect(buf.toString('latin1')).toContain('D:20261116003000Z');
+  });
+});
+
+describe('반려 사유', () => {
+  it('반려 건은 처리자 뒤에 반려 사유 줄', () => {
+    const rows = requestPdfRows({ ...base, status: 'REJECTED', rejectReason: '마감 주간이라 어렵습니다' });
+    expect(rows.slice(-3)).toEqual([
+      ['처리자', '리드'],
+      ['처리 일시', '2026-11-13 11:30:00'],
+      ['반려 사유', '마감 주간이라 어렵습니다'],
+    ]);
+  });
+
+  it('기능 도입 전에 반려된 건(사유 없음)은 -', () => {
+    expect(requestPdfRows({ ...base, status: 'REJECTED' })).toContainEqual(['반려 사유', '-']);
+  });
+
+  it('반려가 아니면 반려 사유 줄 없음', () => {
+    expect(requestPdfRows(base).map((r) => r[0])).not.toContain('반려 사유');
+  });
+});
+
+describe('requestPdfFilename', () => {
+  it('근태신청서_{이름}_{유형}_{대상일}.pdf', () => {
+    expect(requestPdfFilename('김근태', 'ANNUAL', '2026-11-18')).toBe('근태신청서_김근태_연차_2026-11-18.pdf');
+  });
+
+  it('유형 이름의 공백은 _로', () => {
+    expect(requestPdfFilename('김근태', 'OFF', '2026-11-18')).toBe('근태신청서_김근태_반일_OFF_2026-11-18.pdf');
+    expect(requestPdfFilename('김근태', 'WEEKEND_WORK', '2026-11-21')).toBe('근태신청서_김근태_주말·공휴일_근무_2026-11-21.pdf');
   });
 });

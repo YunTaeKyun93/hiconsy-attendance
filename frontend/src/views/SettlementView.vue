@@ -3,6 +3,7 @@
 import { onMounted, ref, watch } from 'vue'
 import { api, errorMessage } from '@/api/client'
 import type { SettlementDetail, SettlementList } from '@/api/types'
+import MonthField from '@/components/MonthField.vue'
 import SettlementDetailCard from '@/components/SettlementDetailCard.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useRefreshStore } from '@/stores/refresh'
@@ -52,15 +53,14 @@ watch(month, load)
           월별 정산 {{ list?.month ?? detail?.month ?? '' }}
         </span>
         <v-spacer />
-        <v-text-field
+        <MonthField
           v-model="month"
-          type="month"
+          :current="list?.month ?? detail?.month"
           label="월 (비우면 이번 달)"
           density="compact"
           hide-details
           clearable
           variant="outlined"
-          lang="ko"
           style="max-width: 240px"
         />
       </v-card-title>

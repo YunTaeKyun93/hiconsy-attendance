@@ -77,6 +77,10 @@ export class WorkRequest {
   @Column({ name: 'reviewed_at', type: 'timestamptz', nullable: true })
   reviewedAt: Date | null;
 
+  /** REJECTED만. 리드가 반려할 때 필수로 입력한다. */
+  @Column({ name: 'reject_reason', type: 'varchar', length: 500, nullable: true })
+  rejectReason: string | null;
+
   /** 서비스에서 Clock 값으로 채운다. DB 기본값 없음. */
   @Column({ name: 'created_at', type: 'timestamptz' })
   createdAt: Date;

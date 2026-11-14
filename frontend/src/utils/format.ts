@@ -29,6 +29,13 @@ export function withWeekday(date: string): string {
   return `${date}(${WEEKDAYS[dow]})`
 }
 
+/** 'YYYY-MM-DD' → 'M/D'. 기준일(서버 오늘)과 연도가 다르면 'YYYY/M/D' */
+export function shortDate(date: string, today: string): string {
+  const [y, m, d] = date.split('-')
+  const md = `${Number(m)}/${Number(d)}`
+  return y === today.slice(0, 4) ? md : `${y}/${md}`
+}
+
 /** 초 → 'H시간 M분' */
 export function duration(seconds: number | null | undefined): string {
   if (seconds === null || seconds === undefined) return '-'
@@ -37,7 +44,33 @@ export function duration(seconds: number | null | undefined): string {
   return m === 0 ? `${h}시간` : `${h}시간 ${m}분`
 }
 
-/** <input type="time">은 초를 빼고 'HH:MM'을 줄 때가 있다. 서버 형식 'HH:MM:SS'로 맞춘다. */
-export function toTimeStr(value: string): string {
-  return /^\d{2}:\d{2}$/.test(value) ? `${value}:00` : value
+/**
+ * 24시간 텍스트 입력 → 'HH:MM:SS'. 형식이 틀리면 null.
+ * 허용: '09:30', '9:30', '0930', '930', '18:30:15', '183015'
+ */
+export function parseTimeInput(raw: string): string | null {
+  const s = raw.trim()
+  const m = /^(\d{1,2}):(\d{2})(?::(\d{2}))?$/.exec(s) ?? /^(\d{1,2})(\d{2})(\d{2})?$/.exec(s)
+  if (!m) return null
+  const [h = 0, mi = 0, se = 0] = [m[1], m[2], m[3] ?? '0'].map(Number)
+  if (h > 23 || mi > 59 || se > 59) return null
+  return [h, mi, se].map((n) => String(n).padStart(2, '0')).join(':')
+}
+
+/** 'HH:MM:SS' → 화면용. 초가 0이면 'HH:MM' */
+export function timeLabel(t: string): string {
+  return t.endsWith(':00') ? t.slice(0, 5) : t
+}
+
+/**
+ * 날짜 텍스트 입력 → 'YYYY-MM-DD'. 없는 날짜거나 형식이 틀리면 null.
+ * 허용: '2026-11-18', '2026.11.18', '2026/11/18', '20261118'
+ */
+export function parseDateInput(raw: string): string | null {
+  const m = /^(\d{4})[-./]?(\d{1,2})[-./]?(\d{1,2})$/.exec(raw.trim())
+  if (!m) return null
+  const [y = 0, mo = 0, d = 0] = [m[1], m[2], m[3]].map(Number)
+  const check = new Date(Date.UTC(y, mo - 1, d))
+  if (check.getUTCFullYear() !== y || check.getUTCMonth() !== mo - 1 || check.getUTCDate() !== d) return null
+  return `${y}-${String(mo).padStart(2, '0')}-${String(d).padStart(2, '0')}`
 }

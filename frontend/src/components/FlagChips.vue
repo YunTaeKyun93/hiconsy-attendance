@@ -9,7 +9,7 @@ defineProps<{
   manual?: boolean | null
   unrecorded?: boolean | null
   absent?: boolean | null
-  size?: 'x-small' | 'small'
+  size?: 'x-small' | 'small' | 'default' | 'large'
 }>()
 </script>
 

@@ -8,7 +8,7 @@ import StatusChip from '@/components/StatusChip.vue'
 import UnrecordedDialog from '@/components/UnrecordedDialog.vue'
 import { useFeedbackStore } from '@/stores/feedback'
 import { useRefreshStore } from '@/stores/refresh'
-import { dayTypeChip, type StatusColor } from '@/theme/status'
+import { dayTypeChip, FLAG, type StatusColor } from '@/theme/status'
 import { duration, kstTime, withWeekday } from '@/utils/format'
 
 const refresh = useRefreshStore()
@@ -49,6 +49,14 @@ const hero = computed((): {
     return { title: '근무 중', color: 'status-ok', icon: 'mdi-briefcase-clock-outline', action: 'check-out', note: '' }
   }
   return { title: '오늘 근무를 마쳤습니다', color: 'day-work', icon: 'mdi-check-circle-outline', action: null, note: '' }
+})
+
+/** 카드 맨 위 색 줄: 출근 기록이 있으면 그날 판정 색(지각 > 조퇴 > 정상), 없으면 상태 색 그대로 */
+const bandColor = computed((): StatusColor => {
+  if (!att.value) return hero.value?.color ?? 'day-none'
+  if (att.value.late) return FLAG.late.color
+  if (att.value.earlyLeave) return FLAG.early.color
+  return FLAG.ok.color
 })
 
 async function load() {
@@ -105,7 +113,7 @@ watch(() => refresh.tick, load)
 
       <!-- 오늘 카드: 상태와 버튼을 가장 크게 -->
       <v-card class="mb-4 overflow-hidden">
-        <div class="hero-band" :class="`bg-${hero.color}`" />
+        <div class="hero-band" :class="`bg-${bandColor}`" />
         <v-card-text class="pa-6">
           <div class="d-flex align-center flex-wrap ga-2 mb-4 text-medium-emphasis">
             <v-icon icon="mdi-calendar-today" size="18" />
@@ -120,7 +128,7 @@ watch(() => refresh.tick, load)
                 <div class="text-display-small font-weight-bold">{{ hero.title }}</div>
               </div>
               <div v-if="att" class="d-flex align-center flex-wrap ga-2 mt-3">
-                <FlagChips :late="att.late" :early="att.earlyLeave" :manual="att.checkOutSource === 'MANUAL'" size="small" />
+                <FlagChips :late="att.late" :early="att.earlyLeave" :manual="att.checkOutSource === 'MANUAL'" size="large" />
               </div>
               <p v-if="hero.note" class="text-body-medium text-medium-emphasis mt-3 mb-0">{{ hero.note }}</p>
             </div>
