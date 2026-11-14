@@ -37,6 +37,8 @@ export interface MyAttendance {
   today: string
   todayType: DayType
   attendance: AttendanceView | null
+  /** 근무 중일 때 정상 퇴근 가능 시각(서버 계산). 주말 근무 등은 null */
+  normalCheckOutFrom: string | null
   unrecorded: UnrecordedView[]
 }
 

@@ -36,6 +36,7 @@ import { classifyDay } from '../domain/day-type.js';
 import { ipMatches } from '../domain/ip-access.js';
 import { DayType, type TimeWindow } from '../domain/types.js';
 import { HolidaysService } from '../holidays/holidays.service.js';
+import { normalCheckOutFrom } from '../domain/normal-check-out.js';
 import {
   attendanceRejection,
   type AttendanceRejectCode,
@@ -69,6 +70,8 @@ export interface MyAttendanceView {
   today: DateStr;
   todayType: DayType;
   attendance: AttendanceView | null;
+  /** 근무 중(출근, 퇴근 전)일 때 정상 퇴근 가능 시각. 판정이 없는 유형(주말 근무)이면 null */
+  normalCheckOutFrom: string | null;
   unrecorded: UnrecordedView[];
 }
 
@@ -281,11 +284,14 @@ export class AttendanceService {
       });
     }
 
+    const rowType = row ? (await this.dayContextOfRow(row)).dayType : null;
+    const working = row !== null && rowType !== null && row.checkOutAt === null;
     return {
       today,
       todayType: todayContext.dayType,
-      attendance: row
-        ? toView(row, (await this.dayContextOfRow(row)).dayType)
+      attendance: row && rowType ? toView(row, rowType) : null,
+      normalCheckOutFrom: working
+        ? (normalCheckOutFrom(rowType, row.checkInAt)?.toISOString() ?? null)
         : null,
       unrecorded,
     };

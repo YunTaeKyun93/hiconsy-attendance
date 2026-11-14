@@ -127,6 +127,15 @@ watch(() => refresh.tick, load)
                 <v-icon :icon="hero.icon" :color="hero.color" size="40" />
                 <div class="text-display-small font-weight-bold">{{ hero.title }}</div>
               </div>
+              <div
+                v-if="hero.action === 'check-out' && mine.normalCheckOutFrom"
+                class="d-flex align-center ga-2 mt-3 text-title-medium"
+              >
+                <v-icon icon="mdi-clock-check-outline" color="status-ok" size="20" />
+                <span>
+                  정상 퇴근 가능 <strong>{{ kstTime(mine.normalCheckOutFrom) }}</strong> 이후
+                </span>
+              </div>
               <div v-if="att" class="d-flex align-center flex-wrap ga-2 mt-3">
                 <FlagChips :late="att.late" :early="att.earlyLeave" :manual="att.checkOutSource === 'MANUAL'" size="large" />
               </div>

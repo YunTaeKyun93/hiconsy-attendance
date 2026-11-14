@@ -22,15 +22,21 @@ export function workSeconds(checkInAt: Date, checkOutAt: Date): number {
   return diff - lunchDeductionSeconds(checkInAt, checkOutAt);
 }
 
-/** 조퇴(비정상). WORKDAY·REMOTE 8시간 미만, HALF_OFF 4시간 미만. 판정이 없는 유형은 null. */
-export function isEarlyLeave(dayType: DayType, worked: number): boolean | null {
+/** 조퇴 기준 근무시간(초). WORKDAY·REMOTE 8시간, HALF_OFF 4시간. 판정이 없는 유형은 null. */
+export function requiredWorkSeconds(dayType: DayType): number | null {
   switch (dayType) {
     case DayType.WORKDAY:
     case DayType.REMOTE:
-      return worked < 8 * HOUR;
+      return 8 * HOUR;
     case DayType.HALF_OFF:
-      return worked < 4 * HOUR;
+      return 4 * HOUR;
     default:
       return null;
   }
+}
+
+/** 조퇴(비정상). 기준 근무시간 미만. 판정이 없는 유형은 null. */
+export function isEarlyLeave(dayType: DayType, worked: number): boolean | null {
+  const required = requiredWorkSeconds(dayType);
+  return required === null ? null : worked < required;
 }
