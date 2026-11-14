@@ -61,11 +61,11 @@ npm run dev     # DB 실행 확인 후 API(:3000)와 화면(:5173)을 함께 실
 | --- | --- |
 | `npm run test -w backend` | 단위 테스트(vitest). 서버 OS 시간대 의존을 잡으려고 `TZ=America/Los_Angeles`에서 돈다 |
 | `npm run sync:holidays` | 공휴일 동기화(공공데이터포털 특일 정보 API). `.env`의 `HOLIDAY_API_KEY`가 없으면 안내 후 종료 |
-| `npm run test:e2e` | 핵심 흐름 E2E(Playwright): 로그인 → 출근 → 퇴근 → 신청 → 리드 승인 → IP 차단 화면. 처음 한 번 `npx playwright install chromium` |
+| `npm run test:e2e` | 핵심 흐름 E2E(Playwright): 로그인 → 출근 → 퇴근 → 신청 → 리드 승인 → IP 차단 화면, 재택 흐름(연구실에서 신청·승인 → 내부망 IP로 본인 출근, 다른 팀원 거부, 시간대 밖 차단). 처음 한 번 `npx playwright install chromium` |
 | `npm run test:e2e:force` | 위와 같되 DB에 기존 데이터가 있어도 진행 |
 | `npm run screenshots` | README 주요 화면 스크린샷을 다시 찍는다(`docs/screenshots/`). 데이터 확인 규칙은 E2E와 같다(`screenshots:force`) |
 
-E2E는 개발 모드 시계 API로 시각을 맞추고, 시작과 끝에 테스트 데이터 초기화 API로 출퇴근·신청·특별 연차·이력을 지운다. 그래서 **시작 전에 DB를 확인해 기존 데이터가 있으면 멈춘다**(지워도 되면 `:force`). 앱이 떠 있지 않으면 `npm run dev`로 띄운다. IP 차단 테스트는 이 기계의 내부망 IPv4로 접속하며, 없으면 건너뛴다.
+E2E는 개발 모드 시계 API로 시각을 맞추고, 시작과 끝에 테스트 데이터 초기화 API로 출퇴근·신청·특별 연차·이력을 지운다. 그래서 **시작 전에 DB를 확인해 기존 데이터가 있으면 멈춘다**(지워도 되면 `:force`). 앱이 떠 있지 않으면 `npm run dev`로 띄운다. IP 차단·재택 테스트는 이 기계의 내부망 IPv4로 접속하며, 없으면 건너뛴다.
 
 ### 환경 변수 (`.env`)
 
