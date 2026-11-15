@@ -6,13 +6,15 @@ import BalanceCard from '@/components/BalanceCard.vue'
 import FlagChips from '@/components/FlagChips.vue'
 import StatusChip from '@/components/StatusChip.vue'
 import UnrecordedDialog from '@/components/UnrecordedDialog.vue'
+import { useClockStore } from '@/stores/clock'
 import { useFeedbackStore } from '@/stores/feedback'
 import { useRefreshStore } from '@/stores/refresh'
 import { dayTypeChip, FLAG, type StatusColor } from '@/theme/status'
-import { duration, kstTime, withWeekday } from '@/utils/format'
+import { duration, kstDate, kstTime, withWeekday } from '@/utils/format'
 
 const refresh = useRefreshStore()
 const fb = useFeedbackStore()
+const clock = useClockStore()
 const mine = ref<MyAttendance | null>(null)
 const balance = ref<BalanceView | null>(null)
 const dialog = ref(false)
@@ -58,6 +60,19 @@ const hero = computed(
     return { title: '오늘 근무를 마쳤습니다', color: 'day-work', icon: 'mdi-check-circle-outline', action: null, note: '' }
   },
 )
+
+/**
+ * 일반·재택 근무일에 근무 중이고 16:00 전이면 퇴근 버튼을 비활성으로 보여준다(서버도 16:00 전 퇴근을 거부).
+ * 반일 OFF·주말 근무는 16:00 제한이 없으므로 해당 없음. 시계가 16:00을 넘기면 바로 풀린다.
+ */
+const CHECK_OUT_OPEN = '16:00:00'
+const checkOutLocked = computed(() => {
+  const m = mine.value
+  if (!m || hero.value?.action !== 'check-out') return false
+  if (m.todayType !== 'WORKDAY' && m.todayType !== 'REMOTE') return false
+  const iso = new Date(clock.nowMs).toISOString()
+  return kstDate(iso) === m.today && kstTime(iso) < CHECK_OUT_OPEN
+})
 
 /** 카드 맨 위 색 줄: 출근 기록이 있으면 그날 판정 색(지각 > 조퇴 > 정상), 없으면 상태 색 그대로 */
 const bandColor = computed((): StatusColor => {
@@ -150,6 +165,9 @@ watch(() => refresh.tick, load)
                   <FlagChips :late="att.late" :early="att.earlyLeave" :manual="att.checkOutSource === 'MANUAL'" size="large" />
                 </div>
                 <p v-if="hero.note" class="text-body-medium text-medium-emphasis mt-3 mb-0">{{ hero.note }}</p>
+                <p v-if="checkOutLocked" class="text-body-medium text-medium-emphasis mt-3 mb-0">
+                  퇴근은 16:00부터 등록할 수 있어요. 일찍 나가시면 다음 출근 때 퇴근 시각을 입력해 주세요.
+                </p>
               </div>
 
               <v-btn
@@ -161,6 +179,7 @@ watch(() => refresh.tick, load)
                 class="text-title-large font-weight-bold"
                 :prepend-icon="hero.action === 'check-in' ? 'mdi-login' : 'mdi-logout'"
                 :loading="busy"
+                :disabled="checkOutLocked"
                 @click="act(hero.action)"
               >
                 {{ hero.action === 'check-in' ? '출근하기' : '퇴근하기' }}

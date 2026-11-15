@@ -3,6 +3,7 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { api, ApiError, errorMessage } from '@/api/client'
 import type { DevClockView } from '@/api/types'
+import { useClockStore } from '@/stores/clock'
 import { useFeedbackStore } from '@/stores/feedback'
 import { useRefreshStore } from '@/stores/refresh'
 import { kstDate, kstTime, timeLabel, withWeekday } from '@/utils/format'
@@ -10,6 +11,7 @@ import DateField from './DateField.vue'
 import TimeField from './TimeField.vue'
 
 const refresh = useRefreshStore()
+const clock = useClockStore()
 const fb = useFeedbackStore()
 const bar = ref<{ $el: HTMLElement } | null>(null)
 let observer: ResizeObserver | undefined
@@ -38,6 +40,7 @@ function apply(view: DevClockView) {
   syncedAt = performance.now()
   displayMs.value = syncedServerMs
   offsetMs.value = view.offsetMs
+  clock.sync(syncedServerMs)
 }
 
 function currentIso(): string {
