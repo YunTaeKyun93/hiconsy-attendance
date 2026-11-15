@@ -1,5 +1,7 @@
 # 근태관리 시스템
 
+[![CI](https://github.com/YunTaeKyun93/hiconsy-attendance/actions/workflows/ci.yml/badge.svg)](https://github.com/YunTaeKyun93/hiconsy-attendance/actions/workflows/ci.yml)
+
 팀 내부 근태관리 웹 애플리케이션. 출퇴근, 연차·재택·반일 OFF·주말 근무 신청과 승인, 잔여 조회, 팀 보드, 월별 정산, 신청서 PDF를 제공한다.
 
 - 설계 기준: [docs/DESIGN.md](docs/DESIGN.md). 이 README의 규칙·설계 이유는 요약이고, 자세한 근거는 DESIGN.md에 있다(제도 해석 4~7장, 데이터 모델 2장, 결정 13장, 선택 기능 14장).
